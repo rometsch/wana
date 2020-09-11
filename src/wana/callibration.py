@@ -1,14 +1,24 @@
+import os
+import sys
+
 import numpy as np
 
 
-
-def load_callibration(name, basedir="."):
-    cal_acc = Callibration(basedir + "/CalibrationFiles/"
-                           + name + "/2019-12-12_09-30/"
-                           + name + "_acc.csv")
-    cal_gyro = Callibration(basedir + "/CalibrationFiles/"
-                            + name + "/2019-12-12_09-30/"
-                            + name + "_gyro.csv")
+def load_callibration(name, data_dir):
+    try:
+        cal_acc = Callibration(os.path.join(data_dir, name + "_acc.csv"))
+    except FileNotFoundError:
+        print(f"Could not find acceleration callibration file for sensor {name}!"
+              + "\nPlease copy it to the data directory.",
+              file=sys.stderr)
+        calc_acc = None
+    try:
+        cal_gyro = Callibration(os.path.join(data_dir, name + "_gyro.csv"))
+    except FileNotFoundError:
+        print(f"Could not find gyroscope callibration file for sensor {name}!"
+              + "\nPlease copy it to the data directory.",
+              file=sys.stderr)
+        calc_gyro = None
     return cal_acc, cal_gyro
 
 

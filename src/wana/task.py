@@ -28,7 +28,7 @@ class Task:
         for s in self.meta["MoteList"]["Mote"]:
             data_file = os.path.join(self.data_dir, s["File"])
             identifier = os.path.basename(data_file).split("_")[1]
-            cal_acc, cal_gyro = load_callibration(identifier)
+            cal_acc, cal_gyro = load_callibration(identifier, self.data_dir)
             name = s["Position"]
             start_index = int(s["Tag"]["Start"])
             stop_index = int(s["Tag"]["Stop"])
