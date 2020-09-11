@@ -72,8 +72,7 @@ class Sensor:
                       "angle_x": "raw",
                       "angle_y": "raw",
                       "angle_z": "raw",
-                      "time": "seconds",
-                      "datetime": "date"}
+                      "time": "s"}
 
     def set_time(self, timestep):
         """ Calculate a time variable using a start and stop value. 
@@ -131,10 +130,10 @@ class Sensor:
                 self.data[varname]), "offset = ", offset, "scaling = ", scale)
             self.data[varname] -= offset
             self.data[varname] /= scale
-        self.units["ax"] = "9.81 m/s"
-        self.units["ay"] = "9.81 m/s"
-        self.units["ay"] = "9.81 m/s"
-        self.units["a"] = "9.81 m/s"
+        self.units["ax"] = "9.81 m/s2"
+        self.units["ay"] = "9.81 m/s2"
+        self.units["ay"] = "9.81 m/s2"
+        self.units["a"] = "9.81 m/s2"
         self.init_accelerations()
 
     def integrate_angles(self):
