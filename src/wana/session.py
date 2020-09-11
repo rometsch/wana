@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from pprint import pprint
 
-from xmldict import XmlDictConfig
+from wana.xmldict import XmlDictConfig
 
 
 class Session:

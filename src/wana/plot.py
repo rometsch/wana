@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate
 
-from session import Session
-from task import Task
+from wana.session import Session
+from wana.task import Task
 
 
 def main():

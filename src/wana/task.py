@@ -1,7 +1,7 @@
 import os
 
-from sensor import Sensor
-from callibration import load_callibration
+from wana.sensor import Sensor
+from wana.callibration import load_callibration
 
 
 class Task:
