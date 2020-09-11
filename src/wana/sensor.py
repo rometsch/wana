@@ -136,8 +136,30 @@ class Sensor:
         self.units["a"] = "9.81 m/s2"
         self.init_accelerations()
 
-    def integrate_angles(self):
-        """ Integrate angular velocity to get angles. """
+    def calc_delta_angle(self, dt):
+        """Calculate the change of angle for the timesteps.
+        
+        Parameters
+        ----------
+        dt: float
+            Time between datapoints in seconds.
+        """
+        for d in ["x", "y", "z"]:
+            varname = "delta_angle_" + d
+            omega = self.data["r"+d]
+            dt = 0.01
+            delta = omega*dt
+            self.data[varname] = delta
+            
+
+    def integrate_angles(self, dt):
+        """ Integrate angular velocity to get angles. 
+        
+        Parameters
+        ----------
+        dt: float
+            Time between datapoints in seconds.
+        """
         for d in ["x", "y", "z"]:
             # get angular_velocity in degree/seconds
             varname = "r" + d
@@ -145,7 +167,6 @@ class Sensor:
             # get time in seconds
             time = self.data["time"]
             # dt = time[1] - time[0]
-            dt = 0.01
             I = np.cumsum(omega)
             I *= dt
             self.data[f"angle_{d}"] = I
