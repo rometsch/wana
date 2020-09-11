@@ -20,8 +20,12 @@ def main():
     for key in args.plots:
         fig = plot_functions[key](t.sensors)
         fig.suptitle(t.name)
+        if args.outfile:
+            append_name = len(args.plots) > 1
+            save_plot(fig, key, args.outfile, append_name = append_name)
 
-    plt.show()
+    if args.outfile is None:
+        plt.show()
 
 
 def parse_cli_args():
@@ -38,9 +42,48 @@ def parse_cli_args():
     parser.add_argument("N_test", type=int, help="Number of test to load.")
     parser.add_argument("-p", "--plots", nargs="+", type=str, choices=available_plots,
                         default=available_plots, help="Plots to produce.")
+    parser.add_argument("-o", "--outfile", help="File to output data to.")
     args = parser.parse_args()
     return args
 
+def save_plot(fig, name, filename, append_name=False):
+    """ Save a plot as image file.
+
+    The type is determined by the filename ending.
+
+    Paramters
+    ---------
+    fig: pyplot.figure
+        The figure object holding the plot.
+    name: str
+        Name of the plot.
+    filename: str
+        Path of the output image.
+    append_name: bool
+        Whether or not to append the plot name before the extension.
+    """
+    if append_name:
+        filename = append_before_extension(filename, name)
+    fig.savefig(filename, dpi=300)
+
+def append_before_extension(s, i):
+    """ Insert i before the extension of s. 
+    
+    Example: s = foo.bar, i = baz, result = foo_baz.bar
+    
+    Parameters
+    ----------
+    s: str
+        Base string.
+    i: str
+        Part to be inserted before last '.'.         
+    """
+    parts = s.split(".")
+    if len(parts) == 1:
+        rv = s + "_" + i
+    else:
+        rv = ".".join(parts[:-1]) + "_" + i + "." + parts[-1]
+    return rv
 
 def plot_angles(sensors):
     """ Plot angle data.
@@ -56,28 +99,24 @@ def plot_angles(sensors):
         Pyplot figure holding the plot.
     """
     N_sensors = len(sensors)
-    #
-    # Make a grid of coordinate systems
-    #
     fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
-    #
-    # Plot the data for all sensors
-    #
+
     for foot, ax in zip(sensors, axes):
         for varname in ["angle_x", "angle_y", "angle_z"]:
             x = foot.data["time"]
             y = foot.data[varname]
             ax.plot(x, y, label=f"{varname}")
-            ax.grid(alpha=0.6)
-            data_unit = foot.units[varname]
-            ax.set_ylabel(f"{varname} [{data_unit}]")
 
         ax.set_title(foot.name)
 
+        ax.grid(alpha=0.6)
         ax.legend()
 
         time_unit = foot.units["time"]
         ax.set_xlabel(f"time [{time_unit}]")
+
+        data_unit = foot.units["angle_x"]
+        ax.set_ylabel(f"angle [{data_unit}]")
 
     return fig
 
@@ -96,28 +135,26 @@ def plot_gyro(sensors):
         Pyplot figure holding the plot.
     """
     N_sensors = len(sensors)
-    #
-    # Make a grid of coordinate systems
-    #
+
     fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
-    #
-    # Plot the data for all sensors
-    #
+
     for foot, ax in zip(sensors, axes):
         for varname in ["rx", "ry", "rz"]:
             x = foot.data["time"]
             y = foot.data[varname]
             ax.plot(x, y, label=f"{varname}")
-            ax.grid(alpha=0.6)
-            data_unit = foot.units[varname]
-            ax.set_ylabel(f"{varname} [{data_unit}]")
 
         ax.set_title(foot.name)
 
+        ax.grid(alpha=0.6)
         ax.legend()
 
         time_unit = foot.units["time"]
         ax.set_xlabel(f"time [{time_unit}]")
+
+        data_unit = foot.units["rx"]
+        ax.set_ylabel(f"$\omega$ [{data_unit}]")
+
 
     return fig
 
@@ -136,28 +173,25 @@ def plot_acceleration(sensors):
         Pyplot figure holding the plot.
     """
     N_sensors = len(sensors)
-    #
-    # Make a grid of coordinate systems
-    #
+
     fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
-    #
-    # Plot the data for all sensors
-    #
+
     for foot, ax in zip(sensors, axes):
         for varname in ["a", "ax", "ay", "az"]:
             x = foot.data["time"]
             y = foot.data[varname] / foot.g
             ax.plot(x, y, label=f"{varname}")
-            ax.grid(alpha=0.6)
-            data_unit = foot.units[varname]
-            ax.set_ylabel(f"{varname} [{data_unit}]")
 
         ax.set_title(foot.name)
 
+        ax.grid(alpha=0.6)
         ax.legend()
 
         time_unit = foot.units["time"]
         ax.set_xlabel(f"time [{time_unit}]")
+
+        data_unit = foot.units["a"]
+        ax.set_ylabel(f"a [{data_unit}]")
 
     return fig
 
