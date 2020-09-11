@@ -4,26 +4,26 @@ import sys
 import numpy as np
 
 
-def load_callibration(name, data_dir):
+def load_calibration(name, data_dir):
     try:
-        cal_acc = Callibration(os.path.join(data_dir, name + "_acc.csv"))
+        cal_acc = Calibration(os.path.join(data_dir, name + "_acc.csv"))
     except OSError:
-        print(f"Could not find acceleration callibration file for sensor {name}!"
+        print(f"Could not find acceleration calibration file for sensor {name}!"
               + "\nPlease copy it to the data directory.",
               file=sys.stderr)
         cal_acc = None
     try:
-        cal_gyro = Callibration(os.path.join(data_dir, name + "_gyro.csv"))
+        cal_gyro = Calibration(os.path.join(data_dir, name + "_gyro.csv"))
     except OSError:
-        print(f"Could not find gyroscope callibration file for sensor {name}!"
+        print(f"Could not find gyroscope calibration file for sensor {name}!"
               + "\nPlease copy it to the data directory.",
               file=sys.stderr)
         cal_gyro = None
     return cal_acc, cal_gyro
 
 
-class Callibration:
-    """ Load a GaitLab callibration file. """
+class Calibration:
+    """ Load a GaitLab calibration file. """
 
     def __init__(self, file_name):
         self.file_name = file_name

@@ -102,7 +102,7 @@ class Sensor:
             self.data[key] = self.data[key][low:up+1]
 
     def calibrate_gyro(self):
-        """ Use callibration for gyroscope values. """
+        """ Use calibration for gyroscope values. """
         print(
             f"calibrating gyro for sensor {self.name} ({self.datafile}) using {self.cal_gyro.file_name}")
         offsets = self.cal_gyro.offset
@@ -120,7 +120,7 @@ class Sensor:
         self.units["angle_z"] = "deg"
 
     def calibrate_acc(self):
-        """ Use callibration for acceleration values. """
+        """ Use calibration for acceleration values. """
         print(
             f"calibrating acceleration for sensor {self.name} ({self.datafile}) using {self.cal_acc.file_name}")
         offsets = self.cal_acc.offset
