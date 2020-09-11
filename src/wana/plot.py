@@ -22,7 +22,7 @@ def main():
         fig.suptitle(t.name)
         if args.outfile:
             append_name = len(args.plots) > 1
-            save_plot(fig, key, args.outfile, append_name = append_name)
+            save_plot(fig, key, args.outfile, append_name=append_name)
 
     if args.outfile is None:
         plt.show()
@@ -46,6 +46,7 @@ def parse_cli_args():
     args = parser.parse_args()
     return args
 
+
 def save_plot(fig, name, filename, append_name=False):
     """ Save a plot as image file.
 
@@ -66,11 +67,12 @@ def save_plot(fig, name, filename, append_name=False):
         filename = append_before_extension(filename, name)
     fig.savefig(filename, dpi=300)
 
+
 def append_before_extension(s, i):
     """ Insert i before the extension of s. 
-    
+
     Example: s = foo.bar, i = baz, result = foo_baz.bar
-    
+
     Parameters
     ----------
     s: str
@@ -84,6 +86,7 @@ def append_before_extension(s, i):
     else:
         rv = ".".join(parts[:-1]) + "_" + i + "." + parts[-1]
     return rv
+
 
 def plot_angles(sensors):
     """ Plot angle data.
@@ -154,7 +157,6 @@ def plot_gyro(sensors):
 
         data_unit = foot.units["rx"]
         ax.set_ylabel(f"$\omega$ [{data_unit}]")
-
 
     return fig
 
