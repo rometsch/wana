@@ -44,3 +44,31 @@ wana plot --help
 wana session --help
 ```
 for further information on the usage of the command line tools.
+
+## Coordinate Systems
+
+The sensors are attached to the top of the shoes.
+As a result, the coordinate system of the sensor is not aligned with the sole of the shoes or the ground.
+
+To calculate the distance walked and equivalently the height above the ground we need to have the data in a fixed reference system. Let's call this system the inertial system which is denoted by an $I$ in superscript.
+The original sensor system is denoted by a $S$ in superscript.
+
+To do this, we first need to know the initial orientation in space.
+We can use the earth's acceleration as a reference when the feet are at rest.
+
+Let us call the acceleration vector due to earth's acceleration $\vec{g}$.
+Furthermore, let the unit vector in this direction be $\hat{e}_g = \frac{\vec{g}}{g}$ with $g = |\vec{g}|$.
+
+To get the z-value in the inertial system, we simply use a projection onto the unit vector;
+
+$$ a_z^I = \hat{e}_g^S \vec{a}^S $$
+
+This should obviously result in the value of $g = 9.81 \frac{\mathrm{m}}{\mathrm{s}^2}$.
+
+Since the feet are free to rotate freely, the direction of $\vec{g}$ in the sensor system is constantly changing.
+Using the gyroscope data which provides angular velocities, we can compute the instantaneous $\vec{g}_n$ for any timestep $n$ by successively correcting for the rotation.
+Having the angular velocity vector, $\vec{\omega}$, and the time between outputs, $\Delta t$, the change in angle per time step is, to first order, $\Delta \alpha_i = \Delta t \, \omega_i$, where $i = x,y,z$ indicates the axis.
+
+
+Now we also need two vectors orthogonal to $\hat{e}_g$ to form a full coordinate system.
+
