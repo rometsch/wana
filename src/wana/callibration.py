@@ -7,18 +7,18 @@ import numpy as np
 def load_callibration(name, data_dir):
     try:
         cal_acc = Callibration(os.path.join(data_dir, name + "_acc.csv"))
-    except FileNotFoundError:
+    except OSError:
         print(f"Could not find acceleration callibration file for sensor {name}!"
               + "\nPlease copy it to the data directory.",
               file=sys.stderr)
-        calc_acc = None
+        cal_acc = None
     try:
         cal_gyro = Callibration(os.path.join(data_dir, name + "_gyro.csv"))
-    except FileNotFoundError:
+    except OSError:
         print(f"Could not find gyroscope callibration file for sensor {name}!"
               + "\nPlease copy it to the data directory.",
               file=sys.stderr)
-        calc_gyro = None
+        cal_gyro = None
     return cal_acc, cal_gyro
 
 
