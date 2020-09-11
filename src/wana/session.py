@@ -1,5 +1,8 @@
+""" Read a session xml file and parse the information. """
+import argparse
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from pprint import pprint
 
 from xmldict import XmlDictConfig
 
@@ -22,3 +25,28 @@ class Session:
         self.tests = [x for x in self.data["TestList"]["Test"]]
         self.tests.sort(key=lambda x: int(
             x["MoteList"]["Mote"][0]["Tag"]["Start"]))
+
+
+def main():
+    args = parse_cli_args()
+    s = Session(args.session_file)
+    pprint(s.data)
+
+
+def parse_cli_args():
+    """ Parse command line arguments. 
+
+    Returns
+    -------
+    Namespace
+        A namespace containing the arguments as attributes.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "session_file", help="XML file describing the session.")
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    main()
