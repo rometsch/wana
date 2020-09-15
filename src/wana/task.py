@@ -42,10 +42,14 @@ class Task:
             sensor.calc_delta_angle()
             trafo.transform_to_reference_system(sensor)
             analysis.flag_resting(sensor)
-            analysis.find_step_intervals(sensor)
             analysis.remove_g(sensor)
             analysis.estimate_velocities(sensor)
             analysis.estimate_positions(sensor)
             trafo.project_vertical(sensor)
             analysis.estimate_height(sensor)
+            try:
+                analysis.find_step_intervals(sensor)
+                analysis.estimate_height_step(sensor)
+            except IndexError:
+                print("Could not detect any steps!")
             self.sensors.append(sensor)

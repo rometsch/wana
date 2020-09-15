@@ -148,13 +148,16 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False):
         else:
             ax.set_ylabel(f"arbitrary units")
 
-        if show_steps:
-            steps = foot.data["interval_steps"]
-            for step in steps:
-                t = foot.data["time"]
-                t_shade = t[step[0]:step[1]]
-                ax.fill_between(t_shade, 1, alpha=0.1, color="k",
-                                transform=ax.get_xaxis_transform())
+        try:
+            if show_steps:
+                steps = foot.data["interval_steps"]
+                for step in steps:
+                    t = foot.data["time"]
+                    t_shade = t[step[0]:step[1]]
+                    ax.fill_between(t_shade, 1, alpha=0.1, color="k",
+                                    transform=ax.get_xaxis_transform())
+        except KeyError:
+            pass
 
     return fig
 
