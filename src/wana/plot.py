@@ -20,6 +20,8 @@ def main():
     print("Available sensor data:")
     print([k for k in t.sensors[0].data])
 
+    print(t.sensors[0].data["interval_steps"])
+
     for key in args.plots:
         if key == "manual":
             fig = plot_functions[key](t.sensors, args.names)
@@ -102,7 +104,7 @@ def append_before_extension(s, i):
     return rv
 
 
-def plot_vars(sensors, varnames):
+def plot_vars(sensors, varnames, y_name=""):
     """ Plot angle data.
 
     Parameters
@@ -139,11 +141,11 @@ def plot_vars(sensors, varnames):
         time_unit = foot.units["time"]
         ax.set_xlabel(f"time [{time_unit}]")
 
-        if all([units[0] == u for u in units]):
+        if all([units[0] == u for u in units]) and units[0] is not None:
             data_unit = units[0]
-            ax.set_ylabel(f"[{data_unit}]")
+            ax.set_ylabel(f"{y_name} [{data_unit}]")
         else:
-            ax.set_ylabel(f"in arbitrary units")
+            ax.set_ylabel(f"arbitrary units")
 
     return fig
 
@@ -161,27 +163,7 @@ def plot_angles(sensors):
     plt.fig
         Pyplot figure holding the plot.
     """
-    N_sensors = len(sensors)
-    fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
-
-    for foot, ax in zip(sensors, axes):
-        for varname in ["angle_x", "angle_y", "angle_z"]:
-            x = foot.data["time"]
-            y = foot.data[varname]
-            ax.plot(x, y, label=f"{varname}")
-
-        ax.set_title(foot.name)
-
-        ax.grid(alpha=0.6)
-        ax.legend()
-
-        time_unit = foot.units["time"]
-        ax.set_xlabel(f"time [{time_unit}]")
-
-        data_unit = foot.units["angle_x"]
-        ax.set_ylabel(f"angle [{data_unit}]")
-
-    return fig
+    return plot_vars(sensors, ["angle_x", "angle_y", "angle_z"], y_name="angle")
 
 
 def plot_gyro(sensors):
@@ -197,28 +179,7 @@ def plot_gyro(sensors):
     plt.fig
         Pyplot figure holding the plot.
     """
-    N_sensors = len(sensors)
-
-    fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
-
-    for foot, ax in zip(sensors, axes):
-        for varname in ["rx", "ry", "rz"]:
-            x = foot.data["time"]
-            y = foot.data[varname]
-            ax.plot(x, y, label=f"{varname}")
-
-        ax.set_title(foot.name)
-
-        ax.grid(alpha=0.6)
-        ax.legend()
-
-        time_unit = foot.units["time"]
-        ax.set_xlabel(f"time [{time_unit}]")
-
-        data_unit = foot.units["rx"]
-        ax.set_ylabel(f"$\omega$ [{data_unit}]")
-
-    return fig
+    return plot_vars(sensors, ["rx", "ry", "rz"], y_name="$\omega$")
 
 
 def plot_acceleration(sensors):
@@ -234,28 +195,7 @@ def plot_acceleration(sensors):
     plt.fig
         Pyplot figure holding the plot.
     """
-    N_sensors = len(sensors)
-
-    fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
-
-    for foot, ax in zip(sensors, axes):
-        for varname in ["a", "ax", "ay", "az"]:
-            x = foot.data["time"]
-            y = foot.data[varname] / foot.g
-            ax.plot(x, y, label=f"{varname}")
-
-        ax.set_title(foot.name)
-
-        ax.grid(alpha=0.6)
-        ax.legend()
-
-        time_unit = foot.units["time"]
-        ax.set_xlabel(f"time [{time_unit}]")
-
-        data_unit = foot.units["a"]
-        ax.set_ylabel(f"a [{data_unit}]")
-
-    return fig
+    return plot_vars(sensors, ["a", "ax", "ay", "az"], y_name="a")
 
 
 plot_functions = {"acc": plot_acceleration,
