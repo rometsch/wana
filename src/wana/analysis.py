@@ -23,7 +23,7 @@ def flag_resting(sensor):
     delta = np.abs(a - g_constant)
     mask = delta < 0.05*g_constant
 
-    N_kernel = 10
+    N_kernel = 20
     kernel = np.ones(N_kernel)/N_kernel
     conv = np.convolve(mask, kernel, mode="same")
     sensor.data["mask_resting"] = conv > 0.5
@@ -142,7 +142,7 @@ def estimate_height(sensor):
         Sensor object holding the data.
     """
     dt = sensor.data["dt"]
-    a = sensor.data["lab_az_gr"]
+    a = sensor.data["lab_az"]
     v = np.cumsum(a*dt)
     z = np.cumsum(v*dt)
 
