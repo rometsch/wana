@@ -20,13 +20,12 @@ def main():
     print("Available sensor data:")
     print([k for k in t.sensors[0].data])
 
-    print(t.sensors[0].data["interval_steps"])
-
     for key in args.plots:
         if key == "manual":
-            fig = plot_functions[key](t.sensors, args.names)
+            fig = plot_functions[key](
+                t.sensors, args.names, show_steps=args.show_steps)
         else:
-            fig = plot_functions[key](t.sensors)
+            fig = plot_functions[key](t.sensors, show_steps=args.show_steps)
         fig.suptitle(t.name)
         if args.outfile:
             append_name = len(args.plots) > 1
@@ -53,6 +52,8 @@ def parse_cli_args():
     parser.add_argument("-o", "--outfile", help="File to output data to.")
     parser.add_argument("-n", "--names", nargs="+",
                         type=str, help="Variable names to plot.")
+    parser.add_argument("--show-steps", default=False, action="store_true",
+                        help="Show the steps as shaded intervals.")
     args = parser.parse_args()
 
     if "manual" in args.plots and args.names is None:
@@ -104,7 +105,7 @@ def append_before_extension(s, i):
     return rv
 
 
-def plot_vars(sensors, varnames, y_name=""):
+def plot_vars(sensors, varnames, y_name="", show_steps=False):
     """ Plot angle data.
 
     Parameters
@@ -147,10 +148,18 @@ def plot_vars(sensors, varnames, y_name=""):
         else:
             ax.set_ylabel(f"arbitrary units")
 
+        if show_steps:
+            steps = foot.data["interval_steps"]
+            for step in steps:
+                t = foot.data["time"]
+                t_shade = t[step[0]:step[1]]
+                ax.fill_between(t_shade, 1, alpha=0.1, color="k",
+                                transform=ax.get_xaxis_transform())
+
     return fig
 
 
-def plot_angles(sensors):
+def plot_angles(sensors, **kwargs):
     """ Plot angle data.
 
     Parameters
@@ -163,10 +172,10 @@ def plot_angles(sensors):
     plt.fig
         Pyplot figure holding the plot.
     """
-    return plot_vars(sensors, ["angle_x", "angle_y", "angle_z"], y_name="angle")
+    return plot_vars(sensors, ["angle_x", "angle_y", "angle_z"], y_name="angle", **kwargs)
 
 
-def plot_gyro(sensors):
+def plot_gyro(sensors, **kwargs):
     """ Plot gyro data.
 
     Parameters
@@ -179,10 +188,10 @@ def plot_gyro(sensors):
     plt.fig
         Pyplot figure holding the plot.
     """
-    return plot_vars(sensors, ["rx", "ry", "rz"], y_name="$\omega$")
+    return plot_vars(sensors, ["rx", "ry", "rz"], y_name="$\omega$", **kwargs)
 
 
-def plot_acceleration(sensors):
+def plot_acceleration(sensors, **kwargs):
     """ Plot acceleration data.
 
     Parameters
@@ -195,7 +204,7 @@ def plot_acceleration(sensors):
     plt.fig
         Pyplot figure holding the plot.
     """
-    return plot_vars(sensors, ["a", "ax", "ay", "az"], y_name="a")
+    return plot_vars(sensors, ["a", "ax", "ay", "az"], y_name="a", **kwargs)
 
 
 plot_functions = {"acc": plot_acceleration,
