@@ -28,9 +28,10 @@ def flag_resting(sensor):
     conv = np.convolve(mask, kernel, mode="same")
     sensor.data["mask_resting"] = conv > 0.5
     sensor.data["mask_moving"] = conv <= 0.5
-    
+
     find_resting_edge(sensor)
-        
+
+
 def find_resting_edge(sensor):
     """ Detect the beginning of a resting interval.
 
@@ -44,7 +45,7 @@ def find_resting_edge(sensor):
         Sensor object holding the data.
     """
     resting = sensor.data["mask_resting"]
-    
+
     trigger_val = 0.5
     mask1 = (resting[:-1] < trigger_val) & (resting[1:] > trigger_val)
     mask2 = (resting[:-1] > trigger_val) & (resting[1:] < trigger_val)
@@ -52,16 +53,17 @@ def find_resting_edge(sensor):
     index_start_resting = np.flatnonzero(mask1)+1
     mask_start_resting = np.zeros(len(resting))
     mask_start_resting[index_start_resting] = 1
-    
+
     sensor.data["index_start_resting"] = index_start_resting
     sensor.data["mask_start_resting"] = mask_start_resting
 
     index_stop_resting = np.flatnonzero(mask2)+1
     mask_stop_resting = np.zeros(len(resting))
     mask_stop_resting[index_stop_resting] = 1
-        
+
     sensor.data["index_stop_resting"] = index_stop_resting
     sensor.data["mask_stop_resting"] = mask_stop_resting
+
 
 def find_step_intervals(sensor):
     """ Detect the bounding interval of steps.
@@ -81,15 +83,20 @@ def find_step_intervals(sensor):
 
     if index_start[0] > index_stop[0]:
         index_stop = index_stop[1:]
-    
+
     N_start = len(index_start)
     N_stop = len(index_stop)
-    
+
     N_steps = min(N_start, N_stop)
-    
+
     for n in range(N_steps):
-        steps.append( [index_start[n], index_stop[n]])
-    
+        low = index_start[n]
+        up = index_stop[n]
+        l = (up-low)
+        pad = int(0.1*l)
+        steps.append([low-pad, up+pad])
+
+
     sensor.data["interval_steps"] = np.array(steps)
 
 
@@ -108,7 +115,7 @@ def estimate_g(sensor):
     mask_moving = np.logical_not(sensor.data["mask_resting"])
     for d in ["x", "y", "z"]:
         a_masked = ma.masked_array(sensor.data["iss_a" + d], mask=mask_moving)
-        
+
         varname = "iss_a" + d + "_rest"
         sensor.data[varname] = a_masked
         sensor.units[varname] = "m/s2"
@@ -118,10 +125,10 @@ def estimate_g(sensor):
     gz = np.average(sensor.data["iss_az_rest"])
 
     g = np.sqrt(gx**2 + gy**2 + gz**2)
-    
-    sensor.data["iss_g"] = np.array([gx, gy, gz])/g*g_constant
+
+    sensor.data["iss_g"] = np.array([gx, gy, gz])#/g*g_constant
     sensor.units["iss_g"] = "m/s2"
-    
+
     print(f"g = ({gx}, {gy}, {gz}), |g| = {g}")
 
 
@@ -141,7 +148,7 @@ def remove_g(sensor):
     for n, d in enumerate(["x", "y", "z"]):
         g_n = sensor.data["iss_g"][n]
         a = sensor.data["iss_a"+d]
-        
+
         varname = "iss_a" + d + "_gr"
         sensor.data[varname] = a - g_n
         sensor.units[varname] = "m/s2"
@@ -212,3 +219,33 @@ def estimate_height(sensor):
     sensor.units["lab_vz"] = "m/s"
     sensor.data["lab_z"] = z
     sensor.units["lab_z"] = "m"
+
+
+def estimate_height_step(sensor):
+    """ Estimate height in the lab frame individually per step.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    """
+    dt = sensor.data["dt"]
+    a = sensor.data["lab_az"]
+
+    index_step_start = sensor.data["interval_steps"][:,0]
+    # index_step_start = sensor.data["index_stop_resting"]
+
+    v = np.cumsum(a*dt)
+    for i in index_step_start:
+        v[i:] -= v[i]
+
+    z = np.cumsum(v*dt)
+
+    for i in index_step_start:
+        z[i:] -= z[i]
+
+
+    sensor.data["lab_vz_step"] = v
+    sensor.units["lab_vz_step"] = "m/s"
+    sensor.data["lab_z_step"] = z
+    sensor.units["lab_z_step"] = "m"
