@@ -67,8 +67,24 @@ This should obviously result in the value of $g = 9.81 \frac{\mathrm{m}}{\mathrm
 
 Since the feet are free to rotate freely, the direction of $\vec{g}$ in the sensor system is constantly changing.
 Using the gyroscope data which provides angular velocities, we can compute the instantaneous $\vec{g}_n$ for any timestep $n$ by successively correcting for the rotation.
-Having the angular velocity vector, $\vec{\omega}$, and the time between outputs, $\Delta t$, the change in angle per time step is, to first order, $\Delta \alpha_i = \Delta t \, \omega_i$, where $i = x,y,z$ indicates the axis.
 
+To track the orientation of the gyroscope sensor system we can use the simultaneous angular rotation angle (SORA) method as described in [Stancin & Tomazic 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3231471/).
 
-Now we also need two vectors orthogonal to $\hat{e}_g$ to form a full coordinate system.
+The appropriate rotation matrix for rotating the coordinate systems is a rotation by angle $\Phi$ around a rotation vector $\vec{v}$.
+Having the angular velocities $\omega^n_i$, $i \in {1,2,3}$ at a given measurement interval $n$ with duration $\Delta t^n$ the angles by which the axis are rotated are $\phi^n_i = \Delta t^n \omega^n_i$.
 
+Assuming that the axis of rotation is constant over the measurement interval we can use the SORA method to obtain
+
+$$ \Phi^n = \sqrt{\sum_{k=1}^3 {\phi^n_k}^2} = \Delta t^n \sqrt{\sum_{k=1}^3 {\omega^n_k}^2} $$
+
+and 
+
+$$ \vec{v} = \frac{1}{\Phi^n} \begin{pmatrix} \phi^n_1 \\ \phi^n_2 \\ \phi^n_3 \end{pmatrix} $$
+
+or to express everything in a single vector
+
+$$ \vec{\Phi^n} = \begin{pmatrix} \phi^n_1 \\ \phi^n_2 \\ \phi^n_3 \end{pmatrix}\,. $$
+
+The length of which gives the rotation angle and its direction specifies the rotation axis.
+
+The angles or angular velocities need to be specified in radians and radians per seconds.
