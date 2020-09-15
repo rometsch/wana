@@ -18,7 +18,10 @@ def main():
     t = Task(s, args.N_test)
 
     for key in args.plots:
-        fig = plot_functions[key](t.sensors)
+        if key == "manual":
+            fig = plot_functions[key](t.sensors, args.names)
+        else:
+            fig = plot_functions[key](t.sensors)
         fig.suptitle(t.name)
         if args.outfile:
             append_name = len(args.plots) > 1
@@ -43,7 +46,15 @@ def parse_cli_args():
     parser.add_argument("-p", "--plots", nargs="+", type=str, choices=available_plots,
                         default=available_plots, help="Plots to produce.")
     parser.add_argument("-o", "--outfile", help="File to output data to.")
+    parser.add_argument("-n", "--names", nargs="+",
+                        type=str, help="Variable names to plot.")
     args = parser.parse_args()
+
+    if "manual" in args.plots and args.names is None:
+        print("For the manual plot, at least one variables name must be specified with -n/--names!")
+        parser.print_help()
+        exit(1)
+
     return args
 
 
@@ -86,6 +97,43 @@ def append_before_extension(s, i):
     else:
         rv = ".".join(parts[:-1]) + "_" + i + "." + parts[-1]
     return rv
+
+
+def plot_vars(sensors, varnames):
+    """ Plot angle data.
+
+    Parameters
+    ----------
+    sensors: list of Sensor
+        A list of the sensors to be plotted.
+    varnames: list of str
+        Variable names to be plotted.
+
+    Returns
+    -------
+    plt.fig
+        Pyplot figure holding the plot.
+    """
+    N_sensors = len(sensors)
+    fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
+
+    for foot, ax in zip(sensors, axes):
+        for varname in varnames:
+            x = foot.data["time"]
+            y = foot.data[varname]
+            ax.plot(x, y, label=f"{varname}")
+
+        ax.set_title(foot.name)
+
+        ax.grid(alpha=0.6)
+        ax.legend()
+
+        time_unit = foot.units["time"]
+        ax.set_xlabel(f"time [{time_unit}]")
+
+        ax.set_ylabel(f"in arbitrary units")
+
+    return fig
 
 
 def plot_angles(sensors):
@@ -200,7 +248,8 @@ def plot_acceleration(sensors):
 
 plot_functions = {"acc": plot_acceleration,
                   "angle": plot_angles,
-                  "rot": plot_gyro}
+                  "rot": plot_gyro,
+                  "manual": plot_vars}
 available_plots = [key for key in plot_functions]
 
 
