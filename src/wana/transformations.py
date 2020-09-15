@@ -68,6 +68,10 @@ def transform_accelerations(sensor):
     sensor.data["iss_ax"] = np.ones(N)
     sensor.data["iss_ay"] = np.ones(N)
     sensor.data["iss_az"] = np.ones(N)
+    
+    sensor.units["iss_ax"] = "m/s2"
+    sensor.units["iss_ay"] = "m/s2"
+    sensor.units["iss_az"] = "m/s2"
 
     for n in range(0, N):
         r = sensor.data["rotation_to_iss"][n]
