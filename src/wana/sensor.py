@@ -134,7 +134,7 @@ class Sensor:
             self.data[varname] *= 9.81/scale
         self.units["ax"] = "m/s2"
         self.units["ay"] = "m/s2"
-        self.units["ay"] = "m/s2"
+        self.units["az"] = "m/s2"
         self.units["a"] = "m/s2"
         self.init_accelerations()
 
