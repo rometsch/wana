@@ -68,7 +68,7 @@ def transform_accelerations(sensor):
     sensor.data["iss_ax"] = np.ones(N)
     sensor.data["iss_ay"] = np.ones(N)
     sensor.data["iss_az"] = np.ones(N)
-    
+
     sensor.units["iss_ax"] = "m/s2"
     sensor.units["iss_ay"] = "m/s2"
     sensor.units["iss_az"] = "m/s2"
@@ -86,3 +86,38 @@ def transform_accelerations(sensor):
         sensor.data["iss_ax"][n] = vec_rot[0]
         sensor.data["iss_ay"][n] = vec_rot[1]
         sensor.data["iss_az"][n] = vec_rot[2]
+
+
+def project_vertical(sensor):
+    """ Calculate vertical acceleration in lab frame.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Object holding the sensor data.
+    """
+
+    g_vec = sensor.data["iss_g"]
+    gx = g_vec[0]
+    gy = g_vec[1]
+    gz = g_vec[2]
+    g = np.sqrt(gx**2+gy**2+gz**2)
+
+    e_z = - g_vec / g
+
+    N = len(sensor.data["ax"])
+
+    varname = "lab_az"
+    az_lab = np.ones(N)
+
+    for n in range(N):
+        a_vec = np.array([
+            sensor.data["iss_ax_gr"][n],
+            sensor.data["iss_ay_gr"][n],
+            sensor.data["iss_az_gr"][n]
+        ])
+
+        az_lab[n] = np.dot(e_z, a_vec)
+
+    sensor.data[varname] = az_lab
+    sensor.units[varname] = "m/s2"

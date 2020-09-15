@@ -1,9 +1,12 @@
 import os
 
-from wana.sensor import Sensor
+from wana.analysis import (estimate_height, estimate_positions,
+                           estimate_velocities, remove_g)
 from wana.calibration import load_calibration
-from wana.transformations import transform_to_reference_system
-from wana.analysis import remove_g, estimate_velocities, estimate_positions
+from wana.sensor import Sensor
+from wana.transformations import (
+    project_vertical, transform_to_reference_system)
+
 
 class Task:
     """ Representation of a single test sequence. 
@@ -43,4 +46,6 @@ class Task:
             remove_g(sensor)
             estimate_velocities(sensor)
             estimate_positions(sensor)
+            project_vertical(sensor)
+            estimate_height(sensor)
             self.sensors.append(sensor)
