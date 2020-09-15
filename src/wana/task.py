@@ -1,11 +1,9 @@
 import os
 
-from wana.analysis import (estimate_height, estimate_positions,
-                           estimate_velocities, remove_g)
+import wana.analysis as analysis
 from wana.calibration import load_calibration
 from wana.sensor import Sensor
-from wana.transformations import (
-    project_vertical, transform_to_reference_system)
+import wana.transformations as trafo
 
 
 class Task:
@@ -42,10 +40,12 @@ class Task:
             sensor.trim_data(start_index, stop_index)
             sensor.integrate_angles()
             sensor.calc_delta_angle()
-            transform_to_reference_system(sensor)
-            remove_g(sensor)
-            estimate_velocities(sensor)
-            estimate_positions(sensor)
-            project_vertical(sensor)
-            estimate_height(sensor)
+            trafo.transform_to_reference_system(sensor)
+            analysis.flag_resting(sensor)
+            analysis.find_step_intervals(sensor)
+            analysis.remove_g(sensor)
+            analysis.estimate_velocities(sensor)
+            analysis.estimate_positions(sensor)
+            trafo.project_vertical(sensor)
+            analysis.estimate_height(sensor)
             self.sensors.append(sensor)
