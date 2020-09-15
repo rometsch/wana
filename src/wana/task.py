@@ -3,7 +3,7 @@ import os
 from wana.sensor import Sensor
 from wana.calibration import load_calibration
 from wana.transformations import transform_to_reference_system
-
+from wana.analysis import remove_g
 
 class Task:
     """ Representation of a single test sequence. 
@@ -40,4 +40,5 @@ class Task:
             sensor.integrate_angles()
             sensor.calc_delta_angle()
             transform_to_reference_system(sensor)
+            remove_g(sensor)
             self.sensors.append(sensor)
