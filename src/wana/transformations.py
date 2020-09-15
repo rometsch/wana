@@ -103,7 +103,7 @@ def project_vertical(sensor):
     gz = g_vec[2]
     g = np.sqrt(gx**2+gy**2+gz**2)
 
-    e_z = - g_vec / g
+    e_z = g_vec / g
 
     N = len(sensor.data["ax"])
 
