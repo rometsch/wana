@@ -131,11 +131,11 @@ class Sensor:
             print(varname, "data = ", np.max(
                 self.data[varname]), "offset = ", offset, "scaling = ", scale)
             self.data[varname] -= offset
-            self.data[varname] /= scale
-        self.units["ax"] = "9.81 m/s2"
-        self.units["ay"] = "9.81 m/s2"
-        self.units["ay"] = "9.81 m/s2"
-        self.units["a"] = "9.81 m/s2"
+            self.data[varname] *= 9.81/scale
+        self.units["ax"] = "m/s2"
+        self.units["ay"] = "m/s2"
+        self.units["ay"] = "m/s2"
+        self.units["a"] = "m/s2"
         self.init_accelerations()
 
     def calc_delta_angle(self):
@@ -152,6 +152,7 @@ class Sensor:
             dt = self.data["dt"]
             delta = omega*dt
             self.data[varname] = delta
+            self.units[varname] = "rad"
             
 
     def integrate_angles(self):
@@ -170,4 +171,7 @@ class Sensor:
             dt = self.data["dt"]
             I = np.cumsum(omega)
             I *= dt
-            self.data[f"angle_{d}"] = I
+            
+            varname = f"angle_{d}"
+            self.data[varname] = I
+            self.units[varname] = "rad"
