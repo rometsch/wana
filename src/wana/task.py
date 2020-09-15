@@ -2,6 +2,7 @@ import os
 
 from wana.sensor import Sensor
 from wana.calibration import load_calibration
+from wana.transformations import transform_to_reference_system
 
 
 class Task:
@@ -38,4 +39,5 @@ class Task:
             sensor.trim_data(start_index, stop_index)
             sensor.integrate_angles()
             sensor.calc_delta_angle()
+            transform_to_reference_system(sensor)
             self.sensors.append(sensor)
