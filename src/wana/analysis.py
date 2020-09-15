@@ -3,6 +3,32 @@
 import numpy as np
 import numpy.ma as ma
 
+# the numerical constant of earth's acceleration
+g_constant = 9.81
+
+
+def flag_resting(sensor):
+    """ Get a mask for when the sensor is resting on ground.
+
+    Compare the total acceleration to the value of g = 9.81 m/s2
+
+    Adds a bool array "mask_resting.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    """
+    a = sensor.data["a"]
+    delta = np.abs(a - g_constant)
+    mask = delta < 0.05*g_constant
+
+    N_kernel = 10
+    kernel = np.ones(N_kernel)/N_kernel
+    conv = np.convolve(mask, kernel, mode="same")
+    sensor.data["mask_resting"] = conv > 0.5
+        
+
 
 def estimate_g(sensor):
     """ Estimate g vector from acceleration data in iss system.
@@ -16,29 +42,25 @@ def estimate_g(sensor):
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
     """
-    if not "iss_ax" in sensor.data:
-        raise KeyError(
-            f"Sensor {sensor.name} does not have acceleration data in initial sensor system.")
-
-    # flag times when foot is not on ground
-    a = sensor.data["a"]
-    g_constant = 9.81
-    delta = np.abs(a - g_constant)
-    mask = delta > 0.01*g_constant
-
+    flag_resting(sensor)
+    mask_moving = np.logical_not(sensor.data["mask_resting"])
     for d in ["x", "y", "z"]:
-        a_masked = ma.masked_array(sensor.data["iss_a" + d], mask=mask)
+        a_masked = ma.masked_array(sensor.data["iss_a" + d], mask=mask_moving)
         
         varname = "iss_a" + d + "_rest"
         sensor.data[varname] = a_masked
         sensor.units[varname] = "m/s2"
 
-    gx = np.average(sensor.data["iss_ax_rest"], )
+    gx = np.average(sensor.data["iss_ax_rest"])
     gy = np.average(sensor.data["iss_ay_rest"])
     gz = np.average(sensor.data["iss_az_rest"])
 
-    sensor.data["iss_g"] = np.array([gx, gy, gz])
+    g = np.sqrt(gx**2 + gy**2 + gz**2)
+    
+    sensor.data["iss_g"] = np.array([gx, gy, gz])/g*g_constant
     sensor.units["iss_g"] = "m/s2"
+    
+    print(f"g = ({gx}, {gy}, {gz}), |g| = {g}")
 
 
 def remove_g(sensor):
@@ -109,3 +131,22 @@ def estimate_positions(sensor):
         varname = "iss_" + d
         sensor.data[varname] = x
         sensor.units[varname] = "m"
+
+
+def estimate_height(sensor):
+    """ Estimate height in the lab frame.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    """
+    dt = sensor.data["dt"]
+    a = sensor.data["lab_az_gr"]
+    v = np.cumsum(a*dt)
+    z = np.cumsum(v*dt)
+
+    sensor.data["lab_vz"] = v
+    sensor.units["lab_vz"] = "m/s"
+    sensor.data["lab_z"] = z
+    sensor.units["lab_z"] = "m"
