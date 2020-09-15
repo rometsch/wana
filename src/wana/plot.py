@@ -17,6 +17,9 @@ def main():
     s = Session(args.session_file)
     t = Task(s, args.N_test)
 
+    print("Available sensor data:")
+    print([k for k in t.sensors[0].data])
+
     for key in args.plots:
         if key == "manual":
             fig = plot_functions[key](t.sensors, args.names)
@@ -118,10 +121,15 @@ def plot_vars(sensors, varnames):
     fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
 
     for foot, ax in zip(sensors, axes):
+        units = []
         for varname in varnames:
             x = foot.data["time"]
             y = foot.data[varname]
             ax.plot(x, y, label=f"{varname}")
+            try:
+                units.append(foot.units[varname])
+            except KeyError:
+                units.append(None)
 
         ax.set_title(foot.name)
 
@@ -131,7 +139,11 @@ def plot_vars(sensors, varnames):
         time_unit = foot.units["time"]
         ax.set_xlabel(f"time [{time_unit}]")
 
-        ax.set_ylabel(f"in arbitrary units")
+        if all([units[0] == u for u in units]):
+            data_unit = units[0]
+            ax.set_ylabel(f"[{data_unit}]")
+        else:
+            ax.set_ylabel(f"in arbitrary units")
 
     return fig
 
