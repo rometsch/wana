@@ -88,3 +88,11 @@ $$ \vec{\Phi^n} = \begin{pmatrix} \phi^n_1 \\ \phi^n_2 \\ \phi^n_3 \end{pmatrix}
 The length of which gives the rotation angle and its direction specifies the rotation axis.
 
 The angles or angular velocities need to be specified in radians and radians per seconds.
+
+To perform the 3D rotations the `scipy.transform` module ([documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html)) can be used.
+
+``` python
+from scipy.spatial.transform import Rotation as R
+r = R.from_rotvec(np.pi/2 * np.array([0, 0, 1]))
+r.as_matrix()
+```
