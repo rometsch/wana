@@ -33,6 +33,8 @@ def load_rawdata(datafile):
         ("rz", itype)])
     data_dict = {key: np.array(rawdata[key], dtype=float)
                  for key in rawdata.dtype.fields}
+    N = len(data_dict["counter"])
+    data_dict["dt"] = 0.01*np.ones(N, dtype=float)
     return data_dict
 
 
@@ -136,7 +138,7 @@ class Sensor:
         self.units["a"] = "9.81 m/s2"
         self.init_accelerations()
 
-    def calc_delta_angle(self, dt):
+    def calc_delta_angle(self):
         """Calculate the change of angle for the timesteps.
         
         Parameters
@@ -147,12 +149,12 @@ class Sensor:
         for d in ["x", "y", "z"]:
             varname = "delta_angle_" + d
             omega = self.data["r"+d]
-            dt = 0.01
+            dt = self.data["dt"]
             delta = omega*dt
             self.data[varname] = delta
             
 
-    def integrate_angles(self, dt):
+    def integrate_angles(self):
         """ Integrate angular velocity to get angles. 
         
         Parameters
@@ -165,8 +167,7 @@ class Sensor:
             varname = "r" + d
             omega = self.data[varname]
             # get time in seconds
-            time = self.data["time"]
-            # dt = time[1] - time[0]
+            dt = self.data["dt"]
             I = np.cumsum(omega)
             I *= dt
             self.data[f"angle_{d}"] = I

@@ -36,7 +36,6 @@ class Task:
                 data_file, f"{name}_{identifier}", cal_acc=cal_acc, cal_gyro=cal_gyro)
             sensor.set_time(0.01)
             sensor.trim_data(start_index, stop_index)
-            dt = 0.01
-            sensor.integrate_angles(dt)
-            sensor.calc_delta_angle(dt)
+            sensor.integrate_angles()
+            sensor.calc_delta_angle()
             self.sensors.append(sensor)
