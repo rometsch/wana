@@ -53,6 +53,9 @@ class Sensor:
             analysis.estimate_velocities(self, "iss", perstep=True)
             analysis.estimate_positions(self, "iss", perstep=True)
 
+            for name in ["iss_vx", "iss_vy", "iss_vz"]:
+                analysis.linear_step_correction(self, name, unit="m/s")
+
             analysis.estimate_velocities(self, "lab", perstep=True)
             analysis.estimate_positions(self, "lab", perstep=True)
         except IndexError:

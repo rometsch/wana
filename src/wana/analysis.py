@@ -294,3 +294,43 @@ def estimate_height_step(sensor):
     sensor.units["lab_vz_step"] = "m/s"
     sensor.data["lab_z_step"] = z
     sensor.units["lab_z_step"] = "m"
+
+
+def linear_step_correction(sensor, varname, unit=None):
+    """ Use values at beginning and end of step to correct for drift.
+    
+    Use a linear interpolation to compute the correction.
+    
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    varname: str
+        Variable name.
+    unit: str
+        Physical unit of the variable.
+    """
+    step_intervals = sensor.data["interval_steps"]
+    
+    y = sensor.data[varname]
+    
+    yc = np.zeros(len(y))
+    
+    for I in step_intervals:
+        left = I[0]
+        right = I[1]
+        
+        dy = y[right] - y[left]
+        dx = right - left
+        
+        ns = np.arange(dx)
+        correction = - ns/ns[-1]*dy
+        
+        yc[left:right] = y[left:right] - y[left] + correction
+        
+    sensor.data[varname + "_lc"] = yc
+
+    if unit is not None:
+        sensor.units[varname + "_lc"] = unit
+
+    
