@@ -1,6 +1,7 @@
 """ Transformations of coordinate systems. """
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from wana import analysis
 
 
 def transform_to_reference_system(sensor):
@@ -198,6 +199,31 @@ def iss_to_lab(sensor, varpattern, unit=None):
         sensor.units["lab_" + varpattern.format("y")] = unit
         sensor.units["lab_" + varpattern.format("z")] = unit
         
-
     analysis.calculate_norm(sensor, "lab_"+varpattern, unit=unit)
 
+
+def project_g(sensor):
+    """ Project accelerations onto g vector.
+    
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Object holding the sensor data.
+    """
+    g_vec = sensor.data["iss_g"]
+    g_vec = g_vec / np.linalg.norm(g_vec)
+    
+    a_vec = np.array( [
+     sensor.data["iss_ax"],
+     sensor.data["iss_ay"],
+     sensor.data["iss_az"]
+    ])
+    
+    N = len(sensor.data["iss_ax"])
+    x = np.zeros(N)
+    
+    for n in range(N):
+        x[n] = np.dot(g_vec, a_vec[:,n])
+        
+    sensor.data["projection_g_iss_a"] = x
+    sensor.units["projection_g_iss_a"] = "m/s2"

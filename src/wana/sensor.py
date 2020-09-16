@@ -36,6 +36,9 @@ class Sensor:
         trafo.transform_to_reference_system(self)
         analysis.flag_resting(self)
         analysis.estimate_g(self)
+        
+        trafo.project_g(self)
+        
         trafo.calc_lab_ez(self)
         trafo.calc_lab_ehor(self)
         trafo.calc_rotation_iss_to_lab(self)
