@@ -147,7 +147,6 @@ def calc_rotation_iss_to_lab(sensor):
     rot_matrix = np.array([
         e_x, e_y, e_z
     ])
-    rot_matrix = np.transpose(rot_matrix)
 
     rot = R.from_matrix(rot_matrix)
 
