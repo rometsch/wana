@@ -1,44 +1,7 @@
 import numpy as np
 import wana.analysis as analysis
 import wana.transformations as trafo
-
-
-def load_rawdata(datafile):
-    """ Load data from the raw data file provided by the app.
-
-    The data dict contains the following values:
-        counter: time variable of the sensor
-        a{x,y,z}: {x,y,z}-component of the accelerometer
-        r{x,y,z}: {x,y,z}-component of the gyroscope
-    The values are stored in the raw datafiles as
-    int32 for the counter and int16 for the data values.
-
-
-    Parameters
-    ----------
-    datafile: str
-        Path to the datafile.
-
-    Returns
-    -------
-    dict
-        A dictionary containing the return values.
-    """
-    itype = np.int16
-    rawdata = np.fromfile(datafile, dtype=[
-        ("counter", np.int32),
-        ("ax", itype),
-        ("ay", itype),
-        ("az", itype),
-        ("rx", itype),
-        ("ry", itype),
-        ("rz", itype)])
-    data_dict = {key: np.array(rawdata[key], dtype=float)
-                 for key in rawdata.dtype.fields}
-    N = len(data_dict["counter"])
-    data_dict["dt"] = 0.01*np.ones(N, dtype=float)
-    return data_dict
-
+from wana.load import load_rawdata_mobilegaitlab
 
 class Sensor:
     """ Hold data about a foot. """
@@ -46,7 +9,7 @@ class Sensor:
     def __init__(self, datafile, name, sample_rate=None, cal_acc=None, cal_gyro=None, trim_low=None, trim_up=None):
         self.datafile = datafile
         self.name = name
-        self.data = load_rawdata(self.datafile)
+        self.data = load_rawdata_mobilegaitlab(self.datafile)
         self.init_accelerations()
         self.init_unit_names()
         self.g = 1
