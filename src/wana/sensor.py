@@ -33,7 +33,9 @@ class Sensor:
     def postprocess(self):
         self.integrate_angles()
         self.calc_delta_angle()
+        
         trafo.transform_to_reference_system(self)
+
         analysis.flag_resting(self)
         analysis.estimate_g(self)
         
@@ -41,33 +43,43 @@ class Sensor:
         
         trafo.calc_lab_ez(self)
         trafo.calc_lab_ehor(self)
-        trafo.calc_rotation_iss_to_lab(self)
+
+        trafo.calc_trafo_iss_to_lab(self)
+        trafo.iss_to_lab(self, "a{}", unit="m/s2")
+        # trafo.iss_to_lab_acc(self)
+
         analysis.remove_g(self)
+        trafo.iss_to_lab(self, "a{}_gr", unit="m/s2")
+
         analysis.estimate_velocities(self, "iss")
-        analysis.estimate_positions(self, "iss")
-        
-        for var in ["a{}_gr", "a{}"]:
-            trafo.iss_to_lab(self, var, unit="m/s2")
+        analysis.estimate_positions(self, "iss", "v{}")
 
         analysis.estimate_velocities(self, "lab")
-        analysis.estimate_positions(self, "lab")
+        analysis.estimate_positions(self, "lab", "v{}")
         try:
             analysis.find_step_intervals(self)
 
+            #
+            # iss frame
+            #
             analysis.estimate_velocities(self, "iss", perstep=True)
 
-            for name in ["iss_vx", "iss_vy", "iss_vz", "iss_vx_step", "iss_vy_step", "iss_vz_step"]:
+            for name in ["iss_vx", "iss_vy", "iss_vz"]:
                 analysis.linear_step_correction(self, name, unit="m/s")
-            analysis.calculate_norm(self, "iss_v{}_lc", unit="m/s")
 
-            analysis.estimate_positions(self, "iss", correction="lc")
-            analysis.estimate_positions(self, "iss", perstep=True)
+            analysis.estimate_positions(self, "iss", "v{}_lc")
+            analysis.estimate_positions(self, "iss", "v{}_step")
 
-            for name in ["iss_x", "iss_y", "iss_z", "iss_x_step", "iss_y_step", "iss_z_step"]:
+            #
+            # lab frame
+            #
+            analysis.estimate_velocities(self, "lab", "v{}")
+            for name in ["lab_vx", "lab_vy", "lab_vz"]:
                 analysis.linear_step_correction(self, name, unit="m")
 
-            analysis.estimate_velocities(self, "lab", perstep=True)
-            analysis.estimate_positions(self, "lab", perstep=True)
+            analysis.estimate_positions(self, "lab", "v{}_lc")
+            analysis.estimate_positions(self, "lab", "v{}_step")
+
         except IndexError:
             print("Could not detect any steps!")
 

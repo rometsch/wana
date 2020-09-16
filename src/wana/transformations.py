@@ -99,12 +99,8 @@ def calc_lab_ez(sensor):
     """
 
     g_vec = sensor.data["iss_g"]
-    gx = g_vec[0]
-    gy = g_vec[1]
-    gz = g_vec[2]
-    g = np.sqrt(gx**2+gy**2+gz**2)
 
-    e_z = g_vec / g
+    e_z = g_vec / np.linalg.norm(g_vec)
 
     varname = "lab_ez"
     sensor.data[varname] = e_z
@@ -122,7 +118,10 @@ def calc_lab_ehor(sensor):
     g_vec = sensor.data["iss_g"]
     g = np.linalg.norm(g_vec)
 
-    e_x = np.array([1, 0, 0]) - g_vec[0]/g * g_vec
+    e_z = g_vec / g
+
+    e_x = np.array([1, 0, 0]) - np.dot([1,0,0], e_z)*e_z
+    # e_x = np.cross([1, 0, 0], e_z)
     e_x /= np.linalg.norm(e_x)
 
     sensor.data["lab_ex"] = e_x
@@ -133,8 +132,8 @@ def calc_lab_ehor(sensor):
     sensor.data["lab_ey"] = e_y
 
 
-def calc_rotation_iss_to_lab(sensor):
-    """ Calculate the rotation from iss to lab frame.
+def calc_trafo_iss_to_lab(sensor):
+    """ Calculate the transformation matrix from iss to lab frame.
 
     Parameters
     ----------
@@ -145,13 +144,12 @@ def calc_rotation_iss_to_lab(sensor):
     e_y = sensor.data["lab_ey"]
     e_z = sensor.data["lab_ez"]
 
-    rot_matrix = np.array([
+    matrix = np.array([
         e_x, e_y, e_z
     ])
 
-    rot = R.from_matrix(rot_matrix)
+    sensor.data["trafo_iss_to_lab"] = matrix
 
-    sensor.data["rotation_iss_2_lab"] = rot
 
 def iss_to_lab(sensor, varpattern, unit=None):
     """ Transform the iss accelerations with gravity removed to lab frame.
@@ -171,59 +169,20 @@ def iss_to_lab(sensor, varpattern, unit=None):
     """
     iss_x = sensor.data["iss_" + varpattern.format("x")]
     iss_y = sensor.data["iss_" + varpattern.format("y")]
-    iss_z = sensor.data["iss_" + varpattern.format("y")]
+    iss_z = sensor.data["iss_" + varpattern.format("z")]
     iss_vec = np.array([iss_x, iss_y, iss_z])
 
-    rot = sensor.data["rotation_iss_2_lab"]
+    projection_matrix = sensor.data["trafo_iss_to_lab"]
 
-    N = len(iss_x)
+    lab_vec = np.dot(projection_matrix, iss_vec)
 
-    lab_x = np.zeros(N)
-    lab_y = np.zeros(N)
-    lab_z = np.zeros(N)
-
-    for n in range(N):
-        v_iss = iss_vec[:, n]
-        v_lab = rot.apply(v_iss)
-
-        lab_x[n] = v_lab[0]
-        lab_y[n] = v_lab[1]
-        lab_z[n] = v_lab[2]
-
-    sensor.data["lab_" + varpattern.format("x")] = lab_x
-    sensor.data["lab_" + varpattern.format("y")] = lab_y
-    sensor.data["lab_" + varpattern.format("z")] = lab_z
+    sensor.data["lab_" + varpattern.format("x")] = lab_vec[0]
+    sensor.data["lab_" + varpattern.format("y")] = lab_vec[1]
+    sensor.data["lab_" + varpattern.format("z")] = lab_vec[2]
 
     if unit is not None:
         sensor.units["lab_" + varpattern.format("x")] = unit
         sensor.units["lab_" + varpattern.format("y")] = unit
         sensor.units["lab_" + varpattern.format("z")] = unit
-        
+
     analysis.calculate_norm(sensor, "lab_"+varpattern, unit=unit)
-
-
-def project_g(sensor):
-    """ Project accelerations onto g vector.
-    
-    Parameters
-    ----------
-    sensor: wana.sensor.Sensor
-        Object holding the sensor data.
-    """
-    g_vec = sensor.data["iss_g"]
-    g_vec = g_vec / np.linalg.norm(g_vec)
-    
-    a_vec = np.array( [
-     sensor.data["iss_ax"],
-     sensor.data["iss_ay"],
-     sensor.data["iss_az"]
-    ])
-    
-    N = len(sensor.data["iss_ax"])
-    x = np.zeros(N)
-    
-    for n in range(N):
-        x[n] = np.dot(g_vec, a_vec[:,n])
-        
-    sensor.data["projection_g_iss_a"] = x
-    sensor.units["projection_g_iss_a"] = "m/s2"

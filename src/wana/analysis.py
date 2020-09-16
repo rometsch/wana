@@ -150,6 +150,16 @@ def estimate_g(sensor):
     sensor.units["iss_g"] = "m/s2"
 
     print(f"g = ({gx}, {gy}, {gz}), |g| = {g}")
+    
+    ### add components for visualization
+    N = len(sensor.data["counter"])
+    sensor.data["iss_gx"] = np.ones(N)*gx
+    sensor.data["iss_gy"] = np.ones(N)*gy
+    sensor.data["iss_gz"] = np.ones(N)*gz
+    
+    sensor.units["iss_gx"] = "m/s2"
+    sensor.units["iss_gy"] = "m/s2"
+    sensor.units["iss_gz"] = "m/s2"
 
 
 def remove_g(sensor):
@@ -217,7 +227,7 @@ def estimate_velocities(sensor, frame, perstep=False):
     calculate_norm(sensor, varpattern, unit="m/s")
 
 
-def estimate_positions(sensor, frame, perstep=False, correction=None):
+def estimate_positions(sensor, frame, varpattern, perstep=False):
     """ Use velocities to estimate positions in the iss.
 
     iss = initial sensor system
@@ -237,11 +247,7 @@ def estimate_positions(sensor, frame, perstep=False, correction=None):
     """
     dt = sensor.data["dt"]
     for d in ["x", "y", "z"]:
-        vel_name = frame + "_v" + d
-        if perstep:
-            vel_name += "_step"
-        if correction is not None:
-            vel_name += "_" + correction
+        vel_name = frame + "_" + varpattern.format(d)
         v = sensor.data[vel_name]
         x = np.cumsum(v*dt)
 
@@ -250,19 +256,13 @@ def estimate_positions(sensor, frame, perstep=False, correction=None):
             for i in index_step_start:
                 x[i:] -= x[i]
 
-        varname = frame + "_" + d
-        if correction is not None:
-            varname += "_" + correction
+        varname = frame + "_" + varpattern[1:].format(d)
         if perstep:
             varname += "_step"
         sensor.data[varname] = x
         sensor.units[varname] = "m"
         
-    varpattern = frame + "_{}"
-    if perstep:
-        varpattern += "_step"
-    if correction is not None:
-        varpattern += "_" + correction
+    varpattern = frame + "_" + varpattern[1:]
     calculate_norm(sensor, varpattern, unit="m")
 
 
