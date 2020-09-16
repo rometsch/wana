@@ -34,11 +34,11 @@ class Task:
             stop_index = int(s["Tag"]["Stop"])
             sampling_rate = float(s["SamplingRate"])
             sensor = Sensor(
-                data_file, f"{name}_{identifier}", 
-                cal_acc=cal_acc, 
-                cal_gyro=cal_gyro, 
-                sample_rate=sampling_rate, 
-                trim_low=start_index, 
+                data_file, f"{name}_{identifier}",
+                cal_acc=cal_acc,
+                cal_gyro=cal_gyro,
+                sample_rate=sampling_rate,
+                trim_low=start_index,
                 trim_up=stop_index)
 
             self.sensors.append(sensor)
