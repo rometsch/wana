@@ -1,9 +1,7 @@
 import os
 
-import wana.analysis as analysis
 from wana.calibration import load_calibration
 from wana.sensor import Sensor
-import wana.transformations as trafo
 
 
 class Task:
@@ -35,21 +33,12 @@ class Task:
             start_index = int(s["Tag"]["Start"])
             stop_index = int(s["Tag"]["Stop"])
             sensor = Sensor(
-                data_file, f"{name}_{identifier}", cal_acc=cal_acc, cal_gyro=cal_gyro)
+                data_file, f"{name}_{identifier}", 
+                cal_acc=cal_acc, 
+                cal_gyro=cal_gyro, 
+                sample_rate=102.5, 
+                trim_low=start_index, 
+                trim_up=stop_index)
             sensor.set_time(0.01)
-            sensor.trim_data(start_index, stop_index)
-            sensor.integrate_angles()
-            sensor.calc_delta_angle()
-            trafo.transform_to_reference_system(sensor)
-            analysis.flag_resting(sensor)
-            analysis.remove_g(sensor)
-            analysis.estimate_velocities(sensor)
-            analysis.estimate_positions(sensor)
-            trafo.project_vertical(sensor)
-            analysis.estimate_height(sensor)
-            try:
-                analysis.find_step_intervals(sensor)
-                analysis.estimate_height_step(sensor)
-            except IndexError:
-                print("Could not detect any steps!")
+
             self.sensors.append(sensor)

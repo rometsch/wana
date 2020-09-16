@@ -1,4 +1,6 @@
 import numpy as np
+import wana.analysis as analysis
+import wana.transformations as trafo
 
 
 def load_rawdata(datafile):
@@ -41,7 +43,7 @@ def load_rawdata(datafile):
 class Sensor:
     """ Hold data about a foot. """
 
-    def __init__(self, datafile, name, cal_acc=None, cal_gyro=None):
+    def __init__(self, datafile, name, sample_rate=None, cal_acc=None, cal_gyro=None, trim_low=None, trim_up=None):
         self.datafile = datafile
         self.name = name
         self.data = load_rawdata(self.datafile)
@@ -55,6 +57,39 @@ class Sensor:
             self.calibrate_gyro()
         if cal_acc is not None:
             self.calibrate_acc()
+        if sample_rate is not None:
+            self.set_time(1/sample_rate)
+            
+        if trim_low is not None and trim_up is not None:
+            self.trim_data(trim_low, trim_up)
+
+        if all([x is not None for x in [sample_rate, cal_acc, cal_gyro]]):
+            self.postprocess()
+
+    def postprocess(self):
+        self.integrate_angles()
+        self.calc_delta_angle()
+        trafo.transform_to_reference_system(self)
+        analysis.flag_resting(self)
+        analysis.estimate_g(self)
+        trafo.calc_lab_ez(self)
+        trafo.calc_lab_ehor(self)
+        trafo.calc_rotation_iss_to_lab(self)
+        analysis.remove_g(self)
+        analysis.estimate_velocities(self, "iss")
+        analysis.estimate_positions(self, "iss")
+        trafo.iss_to_lab(self)
+        analysis.estimate_velocities(self, "lab")
+        analysis.estimate_positions(self, "lab")
+        try:
+            analysis.find_step_intervals(self)
+            analysis.estimate_velocities(self, "iss", perstep=True)
+            analysis.estimate_positions(self, "iss", perstep=True)
+
+            analysis.estimate_velocities(self, "lab", perstep=True)
+            analysis.estimate_positions(self, "lab", perstep=True)
+        except IndexError:
+            print("Could not detect any steps!")
 
     def init_accelerations(self):
         ax = self.data["ax"]
@@ -140,7 +175,7 @@ class Sensor:
 
     def calc_delta_angle(self):
         """Calculate the change of angle for the timesteps.
-        
+
         Parameters
         ----------
         dt: float
@@ -153,11 +188,10 @@ class Sensor:
             delta = omega*dt
             self.data[varname] = delta
             self.units[varname] = "rad"
-            
 
     def integrate_angles(self):
         """ Integrate angular velocity to get angles. 
-        
+
         Parameters
         ----------
         dt: float
@@ -171,7 +205,7 @@ class Sensor:
             dt = self.data["dt"]
             I = np.cumsum(omega)
             I *= dt
-            
+
             varname = f"angle_{d}"
             self.data[varname] = I
             self.units[varname] = "rad"
