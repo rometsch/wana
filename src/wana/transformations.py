@@ -88,8 +88,8 @@ def transform_accelerations(sensor):
         sensor.data["iss_az"][n] = vec_rot[2]
 
 
-def project_vertical(sensor):
-    """ Calculate vertical acceleration in lab frame.
+def calc_lab_ez(sensor):
+    """ Calculate the vertical unit vector of the lab frame.
 
     Parameters
     ----------
@@ -105,19 +105,88 @@ def project_vertical(sensor):
 
     e_z = g_vec / g
 
-    N = len(sensor.data["ax"])
+    varname = "lab_ez"
+    sensor.data[varname] = e_z
 
-    varname = "lab_az"
-    az_lab = np.ones(N)
+
+def calc_lab_ehor(sensor):
+    """ Calculate the horizontal unit vectors of the lab frame.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Object holding the sensor data.
+    """
+    e_z = sensor.data["lab_ez"]
+    g_vec = sensor.data["iss_g"]
+    g = np.linalg.norm(g_vec)
+
+    e_x = np.array([1, 0, 0]) - g_vec[0]/g * g_vec
+    e_x /= np.linalg.norm(e_x)
+
+    sensor.data["lab_ex"] = e_x
+
+    e_y = np.cross(e_z, e_x)
+    e_y /= np.linalg.norm(e_y)
+
+    sensor.data["lab_ey"] = e_y
+
+
+def calc_rotation_iss_to_lab(sensor):
+    """ Calculate the rotation from iss to lab frame.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Object holding the sensor data.
+    """
+    e_x = sensor.data["lab_ex"]
+    e_y = sensor.data["lab_ey"]
+    e_z = sensor.data["lab_ez"]
+
+    rot_matrix = np.array([
+        e_x, e_y, e_z
+    ])
+    rot_matrix = np.transpose(rot_matrix)
+
+    rot = R.from_matrix(rot_matrix)
+
+    sensor.data["rotation_iss_2_lab"] = rot
+
+
+def iss_to_lab(sensor):
+    """ Transform the iss accelerations with gravity removed to lab frame.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Object holding the sensor data.
+    """
+    iss_ax = sensor.data["iss_ax_gr"]
+    iss_ay = sensor.data["iss_ay_gr"]
+    iss_az = sensor.data["iss_az_gr"]
+    iss_a_vec = np.array([iss_ax, iss_ay, iss_az])
+
+    rot = sensor.data["rotation_iss_2_lab"]
+
+    N = len(iss_ax)
+
+    lab_ax = np.zeros(N)
+    lab_ay = np.zeros(N)
+    lab_az = np.zeros(N)
 
     for n in range(N):
-        a_vec = np.array([
-            sensor.data["iss_ax_gr"][n],
-            sensor.data["iss_ay_gr"][n],
-            sensor.data["iss_az_gr"][n]
-        ])
+        v_iss = iss_a_vec[:, n]
+        v_lab = rot.apply(v_iss)
 
-        az_lab[n] = np.dot(e_z, a_vec)
+        lab_ax[n] = v_lab[0]
+        lab_ay[n] = v_lab[1]
+        lab_az[n] = v_lab[2]
 
-    sensor.data[varname] = az_lab
-    sensor.units[varname] = "m/s2"
+    sensor.data["lab_ax_gr"] = lab_ax
+    sensor.data["lab_ay_gr"] = lab_ay
+    sensor.data["lab_az_gr"] = lab_az
+
+    sensor.units["lab_ax_gr"] = "m/s2"
+    sensor.units["lab_ay_gr"] = "m/s2"
+    sensor.units["lab_az_gr"] = "m/s2"
