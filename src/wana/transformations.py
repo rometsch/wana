@@ -197,3 +197,7 @@ def iss_to_lab(sensor, varpattern, unit=None):
         sensor.units["lab_" + varpattern.format("x")] = unit
         sensor.units["lab_" + varpattern.format("y")] = unit
         sensor.units["lab_" + varpattern.format("z")] = unit
+        
+
+    analysis.calculate_norm(sensor, "lab_"+varpattern, unit=unit)
+
