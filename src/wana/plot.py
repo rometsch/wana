@@ -1,11 +1,7 @@
 import argparse
-import os
-from pprint import pprint
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.integrate
 
 from wana.session import Session
 from wana.task import Task
