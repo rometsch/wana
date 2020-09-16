@@ -144,7 +144,6 @@ def remove_g(sensor):
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
     """
-    estimate_g(sensor)
     for n, d in enumerate(["x", "y", "z"]):
         g_n = sensor.data["iss_g"][n]
         a = sensor.data["iss_a"+d]
@@ -154,50 +153,80 @@ def remove_g(sensor):
         sensor.units[varname] = "m/s2"
 
 
-def estimate_velocities(sensor):
+def estimate_velocities(sensor, frame, perstep=False):
     """ Use accelerations with g removed to estimate velocities in the iss.
 
     iss = initial sensor system
+    lab = laboratory frame
     Integrate the accelerations.
 
-    Adds arrays containing the velocity: "iss_v{x,y,z}".
+    Adds arrays containing the velocity: "{iss,lab}_v{x,y,z}".
 
 
     Parameters
     ----------
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
+    frame: str
+        Lab or iss frame.
+    perstep: bool
+        Reset to zero before each new step.
     """
     dt = sensor.data["dt"]
     for d in ["x", "y", "z"]:
-        a = sensor.data["iss_a" + d + "_gr"]
+        acc_name = frame + "_a" + d + "_gr"
+        a = sensor.data[acc_name]
         v = np.cumsum(a*dt)
+        
+        if perstep:
+            print("zeroing data before step")
+            index_step_start = sensor.data["interval_steps"][:,0]
+            for i in index_step_start:
+                v[i:] -= v[i]
 
-        varname = "iss_v" + d
+        varname = frame + "_v" + d
+        if perstep:
+            varname += "_step"
+        print("adding variable", varname, "perstep = ", perstep)
         sensor.data[varname] = v
         sensor.units[varname] = "m/s"
 
 
-def estimate_positions(sensor):
+def estimate_positions(sensor, frame, perstep=False):
     """ Use velocities to estimate positions in the iss.
 
     iss = initial sensor system
     Integrate the velocities.
 
-    Adds arrays containing the position: "iss_{x,y,z}".
+    Adds arrays containing the position: "{iss,lab}_{x,y,z}".
 
 
     Parameters
     ----------
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
+    frame: str
+        Lab or iss frame.
+    perstep: bool
+        Reset to zero before each new step.
     """
     dt = sensor.data["dt"]
     for d in ["x", "y", "z"]:
-        v = sensor.data["iss_v" + d]
+        vel_name = frame + "_v" + d
+        if perstep:
+            vel_name += "_step"
+        v = sensor.data[vel_name]
         x = np.cumsum(v*dt)
 
-        varname = "iss_" + d
+        if perstep:
+            index_step_start = sensor.data["interval_steps"][:,0]
+            for i in index_step_start:
+                x[i:] -= x[i]
+
+
+        varname = frame + "_" + d
+        if perstep:
+            varname += "_step"
         sensor.data[varname] = x
         sensor.units[varname] = "m"
 
@@ -211,7 +240,7 @@ def estimate_height(sensor):
         Sensor object holding the data.
     """
     dt = sensor.data["dt"]
-    a = sensor.data["lab_az"]
+    a = sensor.data["lab_az_gr"]
     v = np.cumsum(a*dt)
     z = np.cumsum(v*dt)
 
@@ -230,7 +259,7 @@ def estimate_height_step(sensor):
         Sensor object holding the data.
     """
     dt = sensor.data["dt"]
-    a = sensor.data["lab_az"]
+    a = sensor.data["lab_az_gr"]
 
     index_step_start = sensor.data["interval_steps"][:,0]
     # index_step_start = sensor.data["index_stop_resting"]
