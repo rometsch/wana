@@ -17,8 +17,10 @@ def main():
     s = Session(args.session_file)
     t = Task(s, args.N_test)
 
-    print("Available sensor data:")
-    print([k for k in t.sensors[0].data])
+    if args.list_vars:
+        print("Available sensor data:")
+        for key in t.sensors[0].data:
+            print(key)
 
     for key in args.plots:
         if key == "manual":
@@ -54,6 +56,8 @@ def parse_cli_args():
                         type=str, help="Variable names to plot.")
     parser.add_argument("--show-steps", default=False, action="store_true",
                         help="Show the steps as shaded intervals.")
+    parser.add_argument("--list-vars", default=False, action="store_true",
+                        help="Print a list of available variables.")
     args = parser.parse_args()
 
     if "manual" in args.plots and args.names is None:
