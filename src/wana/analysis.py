@@ -266,54 +266,6 @@ def estimate_positions(sensor, frame, perstep=False, correction=None):
     calculate_norm(sensor, varpattern, unit="m")
 
 
-def estimate_height(sensor):
-    """ Estimate height in the lab frame.
-
-    Parameters
-    ----------
-    sensor: wana.sensor.Sensor
-        Sensor object holding the data.
-    """
-    dt = sensor.data["dt"]
-    a = sensor.data["lab_az_gr"]
-    v = np.cumsum(a*dt)
-    z = np.cumsum(v*dt)
-
-    sensor.data["lab_vz"] = v
-    sensor.units["lab_vz"] = "m/s"
-    sensor.data["lab_z"] = z
-    sensor.units["lab_z"] = "m"
-
-
-def estimate_height_step(sensor):
-    """ Estimate height in the lab frame individually per step.
-
-    Parameters
-    ----------
-    sensor: wana.sensor.Sensor
-        Sensor object holding the data.
-    """
-    dt = sensor.data["dt"]
-    a = sensor.data["lab_az_gr"]
-
-    index_step_start = sensor.data["interval_steps"][:, 0]
-    # index_step_start = sensor.data["index_stop_resting"]
-
-    v = np.cumsum(a*dt)
-    for i in index_step_start:
-        v[i:] -= v[i]
-
-    z = np.cumsum(v*dt)
-
-    for i in index_step_start:
-        z[i:] -= z[i]
-
-    sensor.data["lab_vz_step"] = v
-    sensor.units["lab_vz_step"] = "m/s"
-    sensor.data["lab_z_step"] = z
-    sensor.units["lab_z_step"] = "m"
-
-
 def linear_step_correction(sensor, varname, unit=None):
     """ Use values at beginning and end of step to correct for drift.
 
