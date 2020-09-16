@@ -210,10 +210,64 @@ def plot_acceleration(sensors, **kwargs):
     return plot_vars(sensors, ["a", "ax", "ay", "az"], y_name="a", **kwargs)
 
 
+def plot_lab_3d_trajectory(sensors, show_steps=False):
+    """ Plot the trajectory in 3d in the lab frame.
+
+    Parameters
+    ----------
+    sensors: list of Sensor
+        A list of the sensors to be plotted.
+
+    Returns
+    -------
+    plt.fig
+        Pyplot figure holding the plot.
+    """
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
+    for sensor in sensors:
+        x = sensor.data["lab_x_lc"]
+        y = sensor.data["lab_y_lc"]
+        z = sensor.data["lab_z_lc"]
+        line, = ax.plot(x, y, z, label=sensor.name)
+        color = line.get_color()
+        if show_steps:
+            for I in sensor.data["interval_steps"]:
+                x_i = x[I[0]]
+                y_i = y[I[0]]
+                z_i = z[I[0]]
+                ax.scatter(x_i, y_i, z_i, marker="d", color=color)
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+
+    axisEqual3D(ax)
+
+    ax.legend()
+
+    return fig
+
+
+def axisEqual3D(ax):
+    extents = np.array([getattr(ax, 'get_{}lim'.format(dim))()
+                        for dim in 'xyz'])
+    sz = extents[:, 1] - extents[:, 0]
+    centers = np.mean(extents, axis=1)
+    maxsize = max(abs(sz))
+    r = maxsize/2
+    for ctr, dim in zip(centers, 'xyz'):
+        getattr(ax, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
+
+
 plot_functions = {"acc": plot_acceleration,
                   "angle": plot_angles,
                   "rot": plot_gyro,
-                  "manual": plot_vars}
+                  "manual": plot_vars,
+                  "trajectory": plot_lab_3d_trajectory
+                  }
 available_plots = [key for key in plot_functions]
 
 
