@@ -99,6 +99,24 @@ def find_step_intervals(sensor):
 
     sensor.data["interval_steps"] = np.array(steps)
 
+def regenerate_masks(sensor):
+    """ Use the step intervals with padding to regenerate the resting and moving masks.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    """
+    N = len(sensor.data["counter"])
+    mask_moving = np.zeros(N, dtype=bool)
+
+    for I in sensor.data["interval_steps"]:
+        mask_moving[I[0]:I[1]] = True
+        
+    mask_resting = np.logical_not(mask_moving)
+    
+    sensor.data["mask_resting"] = mask_resting
+    sensor.data["mask_moving"] = mask_moving
 
 def estimate_g(sensor):
     """ Estimate g vector from acceleration data in iss system.
