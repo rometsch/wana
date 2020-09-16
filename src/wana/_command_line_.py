@@ -14,7 +14,7 @@ def main():
     if name == "plot":
         wana.plot.main()
     elif name == "session":
-        wana.plot.main()
+        wana.session.main()
 
 
 def parse_command_line_args():
