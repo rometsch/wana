@@ -96,8 +96,8 @@ def find_step_intervals(sensor):
         pad = int(0.1*l)
         steps.append([low-pad, up+pad])
 
-
     sensor.data["interval_steps"] = np.array(steps)
+    print("{} steps detected for sensor {}".format(len(steps), sensor.name))
 
 def regenerate_masks(sensor):
     """ Use the step intervals with padding to regenerate the resting and moving masks.
@@ -197,7 +197,6 @@ def estimate_velocities(sensor, frame, perstep=False):
         v = np.cumsum(a*dt)
         
         if perstep:
-            print("zeroing data before step")
             index_step_start = sensor.data["interval_steps"][:,0]
             for i in index_step_start:
                 v[i:] -= v[i]
@@ -205,7 +204,6 @@ def estimate_velocities(sensor, frame, perstep=False):
         varname = frame + "_v" + d
         if perstep:
             varname += "_step"
-        print("adding variable", varname, "perstep = ", perstep)
         sensor.data[varname] = v
         sensor.units[varname] = "m/s"
 
