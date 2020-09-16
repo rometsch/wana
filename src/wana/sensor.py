@@ -59,7 +59,7 @@ class Sensor:
             self.calibrate_acc()
         if sample_rate is not None:
             self.set_time(1/sample_rate)
-            
+
         if trim_low is not None and trim_up is not None:
             self.trim_data(trim_low, trim_up)
 
@@ -83,6 +83,7 @@ class Sensor:
         analysis.estimate_positions(self, "lab")
         try:
             analysis.find_step_intervals(self)
+
             analysis.estimate_velocities(self, "iss", perstep=True)
             analysis.estimate_positions(self, "iss", perstep=True)
 
