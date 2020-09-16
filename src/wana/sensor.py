@@ -41,7 +41,10 @@ class Sensor:
         analysis.remove_g(self)
         analysis.estimate_velocities(self, "iss")
         analysis.estimate_positions(self, "iss")
-        trafo.iss_to_lab(self)
+        
+        for var in ["a{}_gr", "a{}"]:
+            trafo.iss_to_lab(self, var, unit="m/s2")
+
         analysis.estimate_velocities(self, "lab")
         analysis.estimate_positions(self, "lab")
         try:

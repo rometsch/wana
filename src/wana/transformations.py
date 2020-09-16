@@ -152,40 +152,48 @@ def calc_rotation_iss_to_lab(sensor):
 
     sensor.data["rotation_iss_2_lab"] = rot
 
-
-def iss_to_lab(sensor):
+def iss_to_lab(sensor, varpattern, unit=None):
     """ Transform the iss accelerations with gravity removed to lab frame.
+
+    Variable names must be given with a {} to be replaced by the axis name.
+    E.g. for accelerations with gravity removed:
+    varpattern = "a{}_gr"
 
     Parameters
     ----------
     sensor: wana.sensor.Sensor
         Object holding the sensor data.
+    varpattern: str
+        Variable pattern to transform.
+    unit: str
+        Physical unit of the variable.
     """
-    iss_ax = sensor.data["iss_ax_gr"]
-    iss_ay = sensor.data["iss_ay_gr"]
-    iss_az = sensor.data["iss_az_gr"]
-    iss_a_vec = np.array([iss_ax, iss_ay, iss_az])
+    iss_x = sensor.data["iss_" + varpattern.format("x")]
+    iss_y = sensor.data["iss_" + varpattern.format("y")]
+    iss_z = sensor.data["iss_" + varpattern.format("y")]
+    iss_vec = np.array([iss_x, iss_y, iss_z])
 
     rot = sensor.data["rotation_iss_2_lab"]
 
-    N = len(iss_ax)
+    N = len(iss_x)
 
-    lab_ax = np.zeros(N)
-    lab_ay = np.zeros(N)
-    lab_az = np.zeros(N)
+    lab_x = np.zeros(N)
+    lab_y = np.zeros(N)
+    lab_z = np.zeros(N)
 
     for n in range(N):
-        v_iss = iss_a_vec[:, n]
+        v_iss = iss_vec[:, n]
         v_lab = rot.apply(v_iss)
 
-        lab_ax[n] = v_lab[0]
-        lab_ay[n] = v_lab[1]
-        lab_az[n] = v_lab[2]
+        lab_x[n] = v_lab[0]
+        lab_y[n] = v_lab[1]
+        lab_z[n] = v_lab[2]
 
-    sensor.data["lab_ax_gr"] = lab_ax
-    sensor.data["lab_ay_gr"] = lab_ay
-    sensor.data["lab_az_gr"] = lab_az
+    sensor.data["lab_" + varpattern.format("x")] = lab_x
+    sensor.data["lab_" + varpattern.format("y")] = lab_y
+    sensor.data["lab_" + varpattern.format("z")] = lab_z
 
-    sensor.units["lab_ax_gr"] = "m/s2"
-    sensor.units["lab_ay_gr"] = "m/s2"
-    sensor.units["lab_az_gr"] = "m/s2"
+    if unit is not None:
+        sensor.units["lab_" + varpattern.format("x")] = unit
+        sensor.units["lab_" + varpattern.format("y")] = unit
+        sensor.units["lab_" + varpattern.format("z")] = unit
