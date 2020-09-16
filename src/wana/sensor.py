@@ -38,9 +38,7 @@ class Sensor:
 
         analysis.flag_resting(self)
         analysis.estimate_g(self)
-        
-        trafo.project_g(self)
-        
+
         trafo.calc_lab_ez(self)
         trafo.calc_lab_ehor(self)
 
