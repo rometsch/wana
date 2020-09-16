@@ -99,6 +99,7 @@ def find_step_intervals(sensor):
     sensor.data["interval_steps"] = np.array(steps)
     print("{} steps detected for sensor {}".format(len(steps), sensor.name))
 
+
 def regenerate_masks(sensor):
     """ Use the step intervals with padding to regenerate the resting and moving masks.
 
@@ -112,11 +113,12 @@ def regenerate_masks(sensor):
 
     for I in sensor.data["interval_steps"]:
         mask_moving[I[0]:I[1]] = True
-        
+
     mask_resting = np.logical_not(mask_moving)
-    
+
     sensor.data["mask_resting"] = mask_resting
     sensor.data["mask_moving"] = mask_moving
+
 
 def estimate_g(sensor):
     """ Estimate g vector from acceleration data in iss system.
@@ -144,7 +146,7 @@ def estimate_g(sensor):
 
     g = np.sqrt(gx**2 + gy**2 + gz**2)
 
-    sensor.data["iss_g"] = np.array([gx, gy, gz])#/g*g_constant
+    sensor.data["iss_g"] = np.array([gx, gy, gz])  # /g*g_constant
     sensor.units["iss_g"] = "m/s2"
 
     print(f"g = ({gx}, {gy}, {gz}), |g| = {g}")
@@ -169,6 +171,8 @@ def remove_g(sensor):
         varname = "iss_a" + d + "_gr"
         sensor.data[varname] = a - g_n
         sensor.units[varname] = "m/s2"
+
+    calculate_norm(sensor, "iss_a{}_gr", unit="m")
 
 
 def estimate_velocities(sensor, frame, perstep=False):
@@ -195,9 +199,9 @@ def estimate_velocities(sensor, frame, perstep=False):
         acc_name = frame + "_a" + d + "_gr"
         a = sensor.data[acc_name]
         v = np.cumsum(a*dt)
-        
+
         if perstep:
-            index_step_start = sensor.data["interval_steps"][:,0]
+            index_step_start = sensor.data["interval_steps"][:, 0]
             for i in index_step_start:
                 v[i:] -= v[i]
 
@@ -206,9 +210,14 @@ def estimate_velocities(sensor, frame, perstep=False):
             varname += "_step"
         sensor.data[varname] = v
         sensor.units[varname] = "m/s"
+        
+    varpattern = frame + "_v{}"
+    if perstep:
+        varpattern += "_step"
+    calculate_norm(sensor, varpattern, unit="m/s")
 
 
-def estimate_positions(sensor, frame, perstep=False):
+def estimate_positions(sensor, frame, perstep=False, correction=None):
     """ Use velocities to estimate positions in the iss.
 
     iss = initial sensor system
@@ -231,20 +240,30 @@ def estimate_positions(sensor, frame, perstep=False):
         vel_name = frame + "_v" + d
         if perstep:
             vel_name += "_step"
+        if correction is not None:
+            vel_name += "_" + correction
         v = sensor.data[vel_name]
         x = np.cumsum(v*dt)
 
         if perstep:
-            index_step_start = sensor.data["interval_steps"][:,0]
+            index_step_start = sensor.data["interval_steps"][:, 0]
             for i in index_step_start:
                 x[i:] -= x[i]
 
-
         varname = frame + "_" + d
+        if correction is not None:
+            varname += "_" + correction
         if perstep:
             varname += "_step"
         sensor.data[varname] = x
         sensor.units[varname] = "m"
+        
+    varpattern = frame + "_{}"
+    if perstep:
+        varpattern += "_step"
+    if correction is not None:
+        varpattern += "_" + correction
+    calculate_norm(sensor, varpattern, unit="m")
 
 
 def estimate_height(sensor):
@@ -277,7 +296,7 @@ def estimate_height_step(sensor):
     dt = sensor.data["dt"]
     a = sensor.data["lab_az_gr"]
 
-    index_step_start = sensor.data["interval_steps"][:,0]
+    index_step_start = sensor.data["interval_steps"][:, 0]
     # index_step_start = sensor.data["index_stop_resting"]
 
     v = np.cumsum(a*dt)
@@ -289,7 +308,6 @@ def estimate_height_step(sensor):
     for i in index_step_start:
         z[i:] -= z[i]
 
-
     sensor.data["lab_vz_step"] = v
     sensor.units["lab_vz_step"] = "m/s"
     sensor.data["lab_z_step"] = z
@@ -298,9 +316,9 @@ def estimate_height_step(sensor):
 
 def linear_step_correction(sensor, varname, unit=None):
     """ Use values at beginning and end of step to correct for drift.
-    
+
     Use a linear interpolation to compute the correction.
-    
+
     Parameters
     ----------
     sensor: wana.sensor.Sensor
@@ -311,26 +329,50 @@ def linear_step_correction(sensor, varname, unit=None):
         Physical unit of the variable.
     """
     step_intervals = sensor.data["interval_steps"]
-    
+
     y = sensor.data[varname]
-    
+
     yc = np.zeros(len(y))
-    
+
     for I in step_intervals:
         left = I[0]
         right = I[1]
-        
+
         dy = y[right] - y[left]
-        dx = right - left
-        
-        ns = np.arange(dx)
-        correction = - ns/ns[-1]*dy
-        
-        yc[left:right] = y[left:right] - y[left] + correction
-        
+        dx = np.linspace(0, 1, num=right-left)
+
+        correction = - y[left] - dx*dy
+
+        yc[left:right] = y[left:right] + correction
+
     sensor.data[varname + "_lc"] = yc
 
     if unit is not None:
         sensor.units[varname + "_lc"] = unit
 
-    
+
+
+def calculate_norm(sensor, varpattern, unit):
+    """ Calculate absolute magnitude of vector.
+
+    Add an array containing the values to data.
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    varpattern: str
+        Variable name.
+    unit: str
+        Physical unit of the variable.
+    """
+    x = sensor.data[varpattern.format("x")]
+    y = sensor.data[varpattern.format("y")]
+    z = sensor.data[varpattern.format("z")]
+
+    l = np.sqrt(x**2 + y**2 + z**2)
+
+    varname = varpattern.format("")
+    sensor.data[varname] = x
+    if unit is not None:
+        sensor.units[varname] = unit

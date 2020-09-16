@@ -29,6 +29,7 @@ class Sensor:
         if all([x is not None for x in [sample_rate, cal_acc, cal_gyro]]):
             self.postprocess()
 
+
     def postprocess(self):
         self.integrate_angles()
         self.calc_delta_angle()
@@ -51,10 +52,16 @@ class Sensor:
             analysis.find_step_intervals(self)
 
             analysis.estimate_velocities(self, "iss", perstep=True)
+
+            for name in ["iss_vx", "iss_vy", "iss_vz", "iss_vx_step", "iss_vy_step", "iss_vz_step"]:
+                analysis.linear_step_correction(self, name, unit="m/s")
+            analysis.calculate_norm(self, "iss_v{}_lc", unit="m/s")
+
+            analysis.estimate_positions(self, "iss", correction="lc")
             analysis.estimate_positions(self, "iss", perstep=True)
 
-            for name in ["iss_vx", "iss_vy", "iss_vz"]:
-                analysis.linear_step_correction(self, name, unit="m/s")
+            for name in ["iss_x", "iss_y", "iss_z", "iss_x_step", "iss_y_step", "iss_z_step"]:
+                analysis.linear_step_correction(self, name, unit="m")
 
             analysis.estimate_velocities(self, "lab", perstep=True)
             analysis.estimate_positions(self, "lab", perstep=True)
