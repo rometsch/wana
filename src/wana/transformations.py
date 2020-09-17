@@ -100,7 +100,7 @@ def calc_lab_ez(sensor):
 
     g_vec = sensor.data["iss_g"]
 
-    e_z = g_vec / np.linalg.norm(g_vec)
+    e_z = -g_vec / np.linalg.norm(g_vec)
 
     varname = "lab_ez"
     sensor.data[varname] = e_z
@@ -120,7 +120,7 @@ def calc_lab_ehor(sensor):
 
     e_z = g_vec / g
 
-    e_x = np.array([1, 0, 0]) - np.dot([1,0,0], e_z)*e_z
+    e_x = np.array([1, 0, 0]) - np.dot([1, 0, 0], e_z)*e_z
     # e_x = np.cross([1, 0, 0], e_z)
     e_x /= np.linalg.norm(e_x)
 
