@@ -208,7 +208,14 @@ def estimate_velocities(sensor, frame, perstep=False):
     for d in ["x", "y", "z"]:
         acc_name = frame + "_a" + d + "_gr"
         a = sensor.data[acc_name]
-        v = np.cumsum(a*dt)
+
+        # second order integration
+        aux = np.zeros(len(dt))
+        aux[1:] = (a[1:] + a[:-1])/2
+        aux[0] = a[0]
+        aux *= dt
+
+        v = np.cumsum(aux)
 
         if perstep:
             index_step_start = sensor.data["interval_steps"][:, 0]
@@ -220,7 +227,7 @@ def estimate_velocities(sensor, frame, perstep=False):
             varname += "_step"
         sensor.data[varname] = v
         sensor.units[varname] = "m/s"
-        
+
     varpattern = frame + "_v{}"
     if perstep:
         varpattern += "_step"
@@ -249,7 +256,15 @@ def estimate_positions(sensor, frame, varpattern, perstep=False):
     for d in ["x", "y", "z"]:
         vel_name = frame + "_" + varpattern.format(d)
         v = sensor.data[vel_name]
-        x = np.cumsum(v*dt)
+        # x = np.cumsum(v*dt)
+
+        # second order integration
+        aux = np.zeros(len(dt))
+        aux[1:] = (v[1:] + v[:-1])/2
+        aux[0] = v[0]
+        aux *= dt
+
+        x = np.cumsum(aux)
 
         if perstep:
             index_step_start = sensor.data["interval_steps"][:, 0]
@@ -261,7 +276,7 @@ def estimate_positions(sensor, frame, varpattern, perstep=False):
             varname += "_step"
         sensor.data[varname] = x
         sensor.units[varname] = "m"
-        
+
     varpattern = frame + "_" + varpattern[1:]
     calculate_norm(sensor, varpattern, unit="m")
 
