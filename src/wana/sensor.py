@@ -77,6 +77,7 @@ class Sensor:
 
             analysis.estimate_positions(self, "lab", "v{}_lc")
             analysis.estimate_positions(self, "lab", "v{}_step")
+            analysis.calculate_velocity_direction_angles(self, "lab_v{}_lc")
 
         except IndexError:
             print("Could not detect any steps!")

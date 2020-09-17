@@ -150,13 +150,13 @@ def estimate_g(sensor):
     sensor.units["iss_g"] = "m/s2"
 
     print(f"g = ({gx}, {gy}, {gz}), |g| = {g}")
-    
-    ### add components for visualization
+
+    # add components for visualization
     N = len(sensor.data["counter"])
     sensor.data["iss_gx"] = np.ones(N)*gx
     sensor.data["iss_gy"] = np.ones(N)*gy
     sensor.data["iss_gz"] = np.ones(N)*gz
-    
+
     sensor.units["iss_gx"] = "m/s2"
     sensor.units["iss_gy"] = "m/s2"
     sensor.units["iss_gz"] = "m/s2"
@@ -318,7 +318,6 @@ def linear_step_correction(sensor, varname, unit=None):
         sensor.units[varname + "_lc"] = unit
 
 
-
 def calculate_norm(sensor, varpattern, unit):
     """ Calculate absolute magnitude of vector.
 
@@ -343,3 +342,32 @@ def calculate_norm(sensor, varpattern, unit):
     sensor.data[varname] = x
     if unit is not None:
         sensor.units[varname] = unit
+
+
+def calculate_velocity_direction_angles(sensor, varpattern):
+    """ Calculate the direction of the velocity vector.
+
+    Add an array containing the values to data.
+
+    The varpattern includes a {} to be filled with the directions:
+    e.g. lab_a{}_lc
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    varpattern: str
+        Pattern of the variable.
+    """
+    vec = np.array([
+        sensor.data[varpattern.format("x")],
+        sensor.data[varpattern.format("y")],
+        sensor.data[varpattern.format("z")]
+    ])
+    length = np.linalg.norm(vec, axis=0)
+
+    angles = np.arccos(vec/length)
+
+    sensor.data[varpattern.format("x")+"_ori"] = angles[0]
+    sensor.data[varpattern.format("y")+"_ori"] = angles[1]
+    sensor.data[varpattern.format("z")+"_ori"] = angles[2]
