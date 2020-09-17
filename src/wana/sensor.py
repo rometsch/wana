@@ -1,6 +1,7 @@
 import numpy as np
 import wana.analysis as analysis
 import wana.transformations as trafo
+import wana.smooth as smooth
 from wana.load import load_rawdata_mobilegaitlab
 
 class Sensor:
@@ -76,11 +77,18 @@ class Sensor:
                 analysis.linear_step_correction(self, name, unit="m")
 
             analysis.estimate_positions(self, "lab", "v{}_lc")
+            analysis.estimate_positions(self, "lab", "v{}_lc", perstep=True)
+
             analysis.estimate_positions(self, "lab", "v{}_step")
             analysis.calculate_velocity_direction_angles(self, "lab_v{}_lc")
 
         except IndexError:
             print("Could not detect any steps!")
+
+    def smooth(self):
+        """ Smooth the sensor data. """
+        for var in ["ax", "ay", "az", "rx", "ry", "rz"]:
+            smooth.smooth_window(self, var)
 
     def init_accelerations(self):
         ax = self.data["ax"]
