@@ -4,6 +4,7 @@ import wana.transformations as trafo
 import wana.smooth as smooth
 from wana.load import load_rawdata_mobilegaitlab
 
+
 class Sensor:
     """ Hold data about a foot. """
 
@@ -13,7 +14,6 @@ class Sensor:
         self.data = load_rawdata_mobilegaitlab(self.datafile)
         self.init_accelerations()
         self.init_unit_names()
-        self.g = 1
         self.cal_gyro = cal_gyro
         self.cal_acc = cal_acc
 
@@ -30,11 +30,12 @@ class Sensor:
         if all([x is not None for x in [sample_rate, cal_acc, cal_gyro]]):
             self.postprocess()
 
+        self.generate_steps()
 
     def postprocess(self):
         self.integrate_angles()
         self.calc_delta_angle()
-        
+
         trafo.transform_to_reference_system(self)
 
         analysis.flag_resting(self)
@@ -208,3 +209,32 @@ class Sensor:
             varname = f"angle_{d}"
             self.data[varname] = I
             self.units[varname] = "rad"
+
+    def generate_steps(self):
+        """ Construct an array with sensor objects for each step. """
+        intervals = [[0, 0]] + self.data["interval_steps"] + [[-1, -1]]
+        self.steps = []
+        for n in range(1, len(intervals) - 1):
+            low = intervals[n-1][1]
+            up = intervals[n+1][0]
+            s = Step(self, low, up)
+            s.name = self.name + f"_step_{n}"
+            self.steps.append(s)
+
+
+class Step(Sensor):
+
+    def __init__(self, other, low, up):
+        self.datafile = other.datafile
+        self.name = other.name
+        self.cal_gyro = other.cal_gyro
+        self.cal_acc = other.cal_acc
+        self.units = other.units
+
+        self.data = {}
+        for var in ["ax", "ay", "az", "rx", "ry", "rz", "counter", "dt", "time"]:
+            self.data[var] = other.data[var][low:up]
+
+        self.init_accelerations()
+
+        self.postprocess()

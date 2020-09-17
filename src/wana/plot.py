@@ -21,9 +21,9 @@ def main():
     for key in args.plots:
         if key == "manual":
             fig = plot_functions[key](
-                t.sensors, args.names, show_steps=args.show_steps)
+                t.sensors, args.names, show_steps=args.show_steps, stepwise=args.stepwise)
         else:
-            fig = plot_functions[key](t.sensors, show_steps=args.show_steps)
+            fig = plot_functions[key](t.sensors, show_steps=args.show_steps, stepwise=args.stepwise)
         fig.suptitle(t.name)
         if args.outfile:
             append_name = len(args.plots) > 1
@@ -54,6 +54,8 @@ def parse_cli_args():
                         help="Show the steps as shaded intervals.")
     parser.add_argument("--list-vars", default=False, action="store_true",
                         help="Print a list of available variables.")
+    parser.add_argument("-s", "--stepwise", default=False, action="store_true",
+                        help="Use data based on single steps.")
     args = parser.parse_args()
 
     if "manual" in args.plots and args.names is None:
@@ -105,7 +107,7 @@ def append_before_extension(s, i):
     return rv
 
 
-def plot_vars(sensors, varnames, y_name="", show_steps=False):
+def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
     """ Plot angle data.
 
     Parameters
@@ -114,7 +116,10 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False):
         A list of the sensors to be plotted.
     varnames: list of str
         Variable names to be plotted.
-
+    show_steps: bool
+        Indicated detected steps as shaded region.
+    stepwise: bool
+        Use data based on single steps rather than full length.
     Returns
     -------
     plt.fig
@@ -123,23 +128,38 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False):
     N_sensors = len(sensors)
     fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
 
-    for foot, ax in zip(sensors, axes):
+    if stepwise:
+        steps = []
+        steps_axes = []
+        for sensor, ax in zip(sensors, axes):
+            for step in sensor.steps:
+                steps.append(step)
+                steps_axes.append(ax)
+        plot_sensors = steps
+        plot_axes = steps_axes
+    else:
+        plot_axes = axes
+        plot_sensors = sensors
+
+    colors = [c["color"] for c in plt.rcParams['axes.prop_cycle']]
+
+    for sensor, ax in zip(plot_sensors, plot_axes):
+
         units = []
-        for varname in varnames:
-            x = foot.data["time"]
-            y = foot.data[varname]
-            ax.plot(x, y, label=f"{varname}")
+        for varname, color in zip(varnames, colors):
+            x = sensor.data["time"]
+            y = sensor.data[varname]
+            ax.plot(x, y, color=color)
             try:
-                units.append(foot.units[varname])
+                units.append(sensor.units[varname])
             except KeyError:
                 units.append(None)
 
-        ax.set_title(foot.name)
+        ax.set_title(sensor.name)
 
         ax.grid(alpha=0.6)
-        ax.legend()
 
-        time_unit = foot.units["time"]
+        time_unit = sensor.units["time"]
         ax.set_xlabel(f"time [{time_unit}]")
 
         if all([units[0] == u for u in units]) and units[0] is not None:
@@ -150,14 +170,19 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False):
 
         try:
             if show_steps:
-                steps = foot.data["interval_steps"]
+                steps = sensor.data["interval_steps"]
                 for step in steps:
-                    t = foot.data["time"]
+                    t = sensor.data["time"]
                     t_shade = t[step[0]:step[1]]
                     ax.fill_between(t_shade, 1, alpha=0.1, color="k",
                                     transform=ax.get_xaxis_transform())
         except KeyError:
             pass
+
+    for ax in axes:
+        labels = varnames
+        lines = ax.lines[:len(varnames)]
+        ax.legend(lines, labels)
 
     return fig
 
