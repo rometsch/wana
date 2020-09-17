@@ -185,6 +185,25 @@ def remove_g(sensor):
     calculate_norm(sensor, "iss_a{}_gr", unit="m")
 
 
+def zero_acceleration_resting(sensor, frame):
+    """ Set acceleration with g removed to zero in resting period.
+
+    iss = initial sensor system
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    frame: str
+        Coordinate system.
+    """
+    mask_resting = sensor.data["mask_resting"]
+    for n, d in enumerate(["x", "y", "z"]):
+        varname = frame + "_a" + d + "_gr"
+        sensor.data[varname][mask_resting] = 0
+
+    calculate_norm(sensor, frame+"_a{}_gr", unit="m")
+
 def estimate_velocities(sensor, frame, perstep=False):
     """ Use accelerations with g removed to estimate velocities in the iss.
 
