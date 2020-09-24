@@ -1,7 +1,7 @@
 """ Function to smooth the data. """
 import numpy as np
 
-def smooth_window(sensor, varname, N=5):
+def smooth_window(sensor, varname, N=10):
     """ Run a moving average over the data.
     
     Parameres
@@ -17,5 +17,5 @@ def smooth_window(sensor, varname, N=5):
     
     kernel = np.ones(N)/N
     
-    sensor.data[varname] = np.convolve(v,kernel)
+    sensor.data[varname] = np.convolve(v,kernel, mode="same")
     

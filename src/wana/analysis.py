@@ -21,6 +21,7 @@ def flag_resting(sensor):
     """
     a = sensor.data["a"]
     delta = np.abs(a - g_constant)
+    print(delta)
     mask = delta < 0.05*g_constant
 
     N_kernel = 20

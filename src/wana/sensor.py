@@ -2,7 +2,7 @@ import numpy as np
 import wana.analysis as analysis
 import wana.transformations as trafo
 import wana.smooth as smooth
-from wana.load import load_rawdata_mobilegaitlab
+import wana.load as load
 
 
 class Sensor:
@@ -11,7 +11,7 @@ class Sensor:
     def __init__(self, datafile, name, sample_rate=None, cal_acc=None, cal_gyro=None, trim_low=None, trim_up=None):
         self.datafile = datafile
         self.name = name
-        self.data = load_rawdata_mobilegaitlab(self.datafile)
+        self.data = load.load_rawdata_physbox(self.datafile)
         self.init_accelerations()
         self.init_unit_names()
         self.cal_gyro = cal_gyro
@@ -27,10 +27,10 @@ class Sensor:
         if trim_low is not None and trim_up is not None:
             self.trim_data(trim_low, trim_up)
 
-        if all([x is not None for x in [sample_rate, cal_acc, cal_gyro]]):
-            self.postprocess()
+        # if all([x is not None for x in [sample_rate, cal_acc, cal_gyro]]):
+        self.postprocess()
 
-        self.generate_steps()
+        # self.generate_steps()
 
     def postprocess(self):
         self.integrate_angles()
@@ -86,10 +86,10 @@ class Sensor:
         except IndexError:
             print("Could not detect any steps!")
 
-    def smooth(self):
+    def smooth(self, N):
         """ Smooth the sensor data. """
         for var in ["ax", "ay", "az", "rx", "ry", "rz"]:
-            smooth.smooth_window(self, var)
+            smooth.smooth_window(self, var, N=N)
 
     def init_accelerations(self):
         ax = self.data["ax"]
@@ -99,16 +99,16 @@ class Sensor:
 
     def init_unit_names(self):
         """ Initialize unit names for all data. """
-        self.units = {"a": "raw",
-                      "ax": "raw",
-                      "ay": "raw",
-                      "az": "raw",
-                      "rx": "raw",
-                      "ry": "raw",
-                      "rz": "raw",
-                      "angle_x": "raw",
-                      "angle_y": "raw",
-                      "angle_z": "raw",
+        self.units = {"a": "m/s",
+                      "ax": "m/s",
+                      "ay": "m/s",
+                      "az": "m/s",
+                      "rx": "deg/s",
+                      "ry": "deg/s",
+                      "rz": "deg/s",
+                      "angle_x": "deg",
+                      "angle_y": "deg",
+                      "angle_z": "deg",
                       "time": "s"}
 
     def set_time(self, timestep):
@@ -137,6 +137,25 @@ class Sensor:
         print("total data length", len(self.data["ax"]))
         for key in self.data:
             self.data[key] = self.data[key][low:up+1]
+            
+    def trim_time(self, low, up):
+        """ Trim the data to an interval defined by indices low and up.
+
+        Parameters
+        ----------
+        low: int
+            Start of the interval.
+        up: int
+            End of the interval.
+        """
+        print("total data length", len(self.data["ax"]))
+        time = self.data["time"]
+        mask = np.logical_and(time >= low, time <= up)
+        for key in self.data:
+            if not isinstance(self.data[key], np.ndarray) or not len(self.data[key]) == len(mask):
+                continue
+            self.data[key] = self.data[key][mask]
+        self.postprocess()
 
     def calibrate_gyro(self):
         """ Use calibration for gyroscope values. """

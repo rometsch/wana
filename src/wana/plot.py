@@ -5,26 +5,46 @@ import numpy as np
 
 from wana.session import Session
 from wana.task import Task
+from wana.sensor import Sensor
 
 
 def main():
     args = parse_cli_args()
 
-    s = Session(args.session_file)
-    t = Task(s, args.N_test)
+    # s = Session(args.session_file)
+    # t = Task(s, args.task)
+    # sensors = t.sensors
+    # name = t.name
+
+    s = Sensor(args.data_file, "physbox")
+    if args.smooth is not None:
+        s.smooth(args.smooth)
+        s.postprocess()
+    if args.trim is not None:
+        low = args.trim[0]
+        up = args.trim[1]
+        s.trim_time(low, up)
+
+    sensors = [s]
+    name = "physbox"
 
     if args.list_vars:
         print("Available sensor data:")
-        for key in t.sensors[0].data:
+        for key in sensors[0].data:
             print(key)
+
+    # plot_acceleration([s, s])
+
+    # plt.show()
 
     for key in args.plots:
         if key == "manual":
             fig = plot_functions[key](
-                t.sensors, args.names, show_steps=args.show_steps, stepwise=args.stepwise)
+                sensors, args.names, show_steps=args.show_steps, stepwise=args.stepwise)
         else:
-            fig = plot_functions[key](t.sensors, show_steps=args.show_steps, stepwise=args.stepwise)
-        fig.suptitle(t.name)
+            fig = plot_functions[key](
+                sensors, show_steps=args.show_steps, stepwise=args.stepwise)
+        fig.suptitle(name)
         if args.outfile:
             append_name = len(args.plots) > 1
             save_plot(fig, key, args.outfile, append_name=append_name)
@@ -43,10 +63,10 @@ def parse_cli_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "session_file", help="XML file describing the session.")
-    parser.add_argument("N_test", type=int, help="Number of test to load.")
+        "data_file", help="XML (gaitlab mobile) or zip (physbox app) file.")
     parser.add_argument("-p", "--plots", nargs="+", type=str, choices=available_plots,
-                        default=available_plots, help="Plots to produce.")
+                        default=[k for k in available_plots if k not in ["manual"]],
+                        help="Plots to produce.")
     parser.add_argument("-o", "--outfile", help="File to output data to.")
     parser.add_argument("-n", "--names", nargs="+",
                         type=str, help="Variable names to plot.")
@@ -56,6 +76,12 @@ def parse_cli_args():
                         help="Print a list of available variables.")
     parser.add_argument("-s", "--stepwise", default=False, action="store_true",
                         help="Use data based on single steps.")
+    parser.add_argument("--trim", nargs=2, type=float,
+                        help="Trim data to time.")
+    parser.add_argument("--smooth", type=int,
+                        help="Smooth over N datapoints.")
+    parser.add_argument("--task", type=int, default=0,
+                        help="For gaitlab files: select the task.")
     args = parser.parse_args()
 
     if "manual" in args.plots and args.names is None:
@@ -127,6 +153,8 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
     """
     N_sensors = len(sensors)
     fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
+    if N_sensors == 1:
+        axes = [axes]
 
     if stepwise:
         steps = []
@@ -235,7 +263,7 @@ def plot_acceleration(sensors, **kwargs):
     return plot_vars(sensors, ["a", "ax", "ay", "az"], y_name="a", **kwargs)
 
 
-def plot_lab_3d_trajectory(sensors, show_steps=False):
+def plot_lab_3d_trajectory(sensors, show_steps=False, **kwargs):
     """ Plot the trajectory in 3d in the lab frame.
 
     Parameters
