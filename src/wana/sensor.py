@@ -41,7 +41,8 @@ class Sensor:
         #     pass
         self.postprocess()
 
-        self.generate_steps()
+        self.steps = []
+
 
     def postprocess(self):
         self.integrate_angles()
@@ -50,6 +51,7 @@ class Sensor:
         trafo.transform_to_reference_system(self)
 
         ed.flag_resting(self, "a", reference="g", delta_threshold=0.02)
+        analysis.extract_resting_values(self, "a")
 
         analysis.estimate_g(self, order=1)
 

@@ -25,6 +25,16 @@ def main():
         if args.sensor is not None:
             sensors = [sensors[args.sensor]]
 
+    if args.stepwise:
+        for s in sensors:
+            s.generate_steps()
+
+    if args.step:
+        args.stepwise = True
+        for s in sensors:
+            s.generate_step(args.step)
+        
+
     if args.smooth is not None:
         for s in sensors:
             s.smooth(args.smooth)
@@ -98,6 +108,8 @@ def parse_cli_args():
                         help="For gaitlab files: select the task.")
     parser.add_argument("--sensor", type=int,
                         help="Select a single sensor to display.")
+    parser.add_argument("--step", type=int,
+                        help="Select a single step to display.")
     args = parser.parse_args()
 
     if "manual" in args.plots and args.names is None:
@@ -238,9 +250,13 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
 
         units = []
         for varname, color in zip(varnames, colors):
-            x = sensor.data["time"]
-            y = sensor.data[varname]
-            ax.plot(x, y, color=color, alpha=1)
+            try:
+                x = sensor.data["time"]
+                y = sensor.data[varname]
+                ax.plot(x, y, color=color, alpha=1)
+            except KeyError:
+                print(f"Variable {varname} not found for sensor {sensor.name}!")
+                continue
             try:
                 units.append(sensor.units[varname])
             except KeyError:
@@ -253,7 +269,7 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
         time_unit = sensor.units["time"]
         ax.set_xlabel(f"time [{time_unit}]")
 
-        if all([units[0] == u for u in units]) and units[0] is not None:
+        if len(units) > 0 and all([units[0] == u for u in units]) and units[0] is not None:
             data_unit = units[0]
             ax.set_ylabel(f"{y_name} [{data_unit}]")
         else:
