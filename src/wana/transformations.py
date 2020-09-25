@@ -104,7 +104,7 @@ def calc_lab_ez(sensor):
         sensor.data["iss_gz"][0]
         ])
 
-    e_z = -g_vec / np.linalg.norm(g_vec)
+    e_z = g_vec / np.linalg.norm(g_vec)
 
     varname = "lab_ez"
     sensor.data[varname] = e_z
