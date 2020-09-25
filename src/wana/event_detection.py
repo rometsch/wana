@@ -87,7 +87,7 @@ def find_resting_edge(sensor):
     sensor.data["mask_stop_resting"] = mask_stop_resting
 
 
-def find_step_intervals(sensor, min_time=0.5):
+def find_step_intervals(sensor, min_time=0.2):
     """ Detect the bounding interval of steps.
 
     Adds 4 arrays:
