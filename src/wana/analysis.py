@@ -7,7 +7,7 @@ import numpy.ma as ma
 g_constant = 9.81
 
 
-def flag_resting(sensor):
+def flag_resting(sensor, N_kernel=20):
     """ Get a mask for when the sensor is resting on ground.
 
     Compare the total acceleration to the value of g = 9.81 m/s2
@@ -21,10 +21,9 @@ def flag_resting(sensor):
     """
     a = sensor.data["a"]
     delta = np.abs(a - g_constant)
-    print(delta)
-    mask = delta < 0.05*g_constant
 
-    N_kernel = 20
+    mask = delta < 0.02*g_constant
+
     kernel = np.ones(N_kernel)/N_kernel
     conv = np.convolve(mask, kernel, mode="same")
     sensor.data["mask_resting"] = conv > 0.5
@@ -142,6 +141,7 @@ def estimate_g(sensor, mode="average"):
         estimate_g_poly(sensor, 1)
     set_g_units(sensor)
 
+
 def extract_resting_accelerations(sensor):
     """ Extract accelerations for the times when sensor is at rest.
 
@@ -156,7 +156,8 @@ def extract_resting_accelerations(sensor):
         Sensor object holding the data.
     """
     mask_resting = np.logical_not(sensor.data["mask_resting"])
-    sensor.data["time_resting"] = ma.masked_array(sensor.data["time"], mask=mask_resting)
+    sensor.data["time_resting"] = ma.masked_array(
+        sensor.data["time"], mask=mask_resting)
     sensor.units["time_resting"] = "s"
     for d in ["x", "y", "z"]:
         a_masked = ma.masked_array(sensor.data["iss_a" + d], mask=mask_resting)
@@ -164,6 +165,7 @@ def extract_resting_accelerations(sensor):
         varname = "iss_a" + d + "_rest"
         sensor.data[varname] = a_masked
         sensor.units[varname] = "m/s2"
+
 
 def set_g_units(sensor):
     """ Set units for the g vector data.
@@ -203,8 +205,6 @@ def estimate_g_average(sensor):
     sensor.data["iss_g"] = np.array([gx, gy, gz])  # /g*g_constant
     sensor.units["iss_g"] = "m/s2"
 
-    print(f"g = ({gx}, {gy}, {gz}), |g| = {g}")
-
     # add components
     N = len(sensor.data["counter"])
     sensor.data["iss_gx"] = np.ones(N)*gx
@@ -235,7 +235,7 @@ def estimate_g_poly(sensor, order):
         f = np.poly1d(p)
         g = f(time)
         sensor.data[f"iss_g{d}"] = g
-        print(f"g{d}",g)
+
 
 def remove_g(sensor):
     """ Remove g vector from acceleration data in iss system.
@@ -278,6 +278,7 @@ def zero_acceleration_resting(sensor, frame):
         sensor.data[varname][mask_resting] = 0
 
     calculate_norm(sensor, frame+"_a{}_gr", unit="m")
+
 
 def estimate_velocities(sensor, frame, perstep=False):
     """ Use accelerations with g removed to estimate velocities in the iss.
