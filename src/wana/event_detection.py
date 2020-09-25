@@ -5,7 +5,8 @@ import numpy.ma as ma
 g_constant = 9.81
 
 
-def flag_resting(sensor, N_kernel=20):
+def flag_resting(sensor, varname, N_kernel=20, order=1,
+                 prior_mask=None, reference="max", delta_threshold=0.02):
     """ Get a mask for when the sensor is resting on ground.
 
     Compare the total acceleration to the value of g = 9.81 m/s2
@@ -17,15 +18,38 @@ def flag_resting(sensor, N_kernel=20):
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
     """
-    a = sensor.data["a"]
-    delta = np.abs(a - g_constant)
+    values = sensor.data[varname]
+    time = sensor.data["time"]
+    if prior_mask is not None:
+        fit_values = values[prior_mask]
+        fit_time = time[prior_mask]
+    else:
+        fit_values = values
+        fit_time = time
 
-    mask = delta < 0.02*g_constant
+    if reference == "g":
+        delta = np.abs(fit_values - g_constant)
+        ref_val = g_constant
+    elif reference == "max":
+        p = np.polyfit(fit_time, fit_values, order)
+        poly = np.poly1d(p)
+        delta = np.abs(values - poly(time))
+        ref_val = np.max(np.abs(values))
+    else:
+        raise ValueError("reference =", reference, "is not supported!")
+
+    mask = delta < delta_threshold*ref_val
+
+    if prior_mask is not None:
+        mask = np.logical_and(mask, prior_mask)
 
     kernel = np.ones(N_kernel)/N_kernel
     conv = np.convolve(mask, kernel, mode="same")
-    sensor.data["mask_resting"] = conv > 0.5
-    sensor.data["mask_moving"] = conv <= 0.5
+    mask_resting = conv > 0.5
+    mask_moving = conv <= 0.5
+
+    sensor.data[f"mask_{varname}_resting"] = mask_resting
+    sensor.data[f"mask_{varname}_moving"] = mask_moving
 
     find_resting_edge(sensor)
 
@@ -42,7 +66,7 @@ def find_resting_edge(sensor):
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
     """
-    resting = sensor.data["mask_resting"]
+    resting = sensor.data["mask_a_resting"]
 
     trigger_val = 0.5
     mask1 = (resting[:-1] < trigger_val) & (resting[1:] > trigger_val)
@@ -114,5 +138,5 @@ def regenerate_masks(sensor):
 
     mask_resting = np.logical_not(mask_moving)
 
-    sensor.data["mask_resting"] = mask_resting
-    sensor.data["mask_moving"] = mask_moving
+    sensor.data["mask_a_resting"] = mask_resting
+    sensor.data["mask_a_moving"] = mask_moving
