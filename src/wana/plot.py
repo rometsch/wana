@@ -11,22 +11,27 @@ from wana.sensor import Sensor
 def main():
     args = parse_cli_args()
 
-    # s = Session(args.session_file)
-    # t = Task(s, args.task)
-    # sensors = t.sensors
-    # name = t.name
+    if os.path.splitext(args.data_file)[-1] == ".zip":
+        s = Sensor(args.data_file, "phyphox")
+        sensors = [s]
+        name = "phyphox"
+    else:
+        s = Session(args.data_file)
+        t = Task(s, args.task)
+        sensors = t.sensors
+        name = t.name
+        if args.sensor is not None:
+            sensors = [sensors[args.sensor]]
 
-    s = Sensor(args.data_file, "phyphox")
     if args.smooth is not None:
-        s.smooth(args.smooth)
-        s.postprocess()
+        for s in sensors:
+            s.smooth(args.smooth)
+            s.postprocess()
     if args.trim is not None:
-        low = args.trim[0]
-        up = args.trim[1]
-        s.trim_time(low, up)
-
-    sensors = [s]
-    name = "phyphox"
+        for s in sensors:
+            low = args.trim[0]
+            up = args.trim[1]
+            s.trim_time(low, up)
 
     if args.list_vars:
         print("Available sensor data:")
@@ -82,6 +87,8 @@ def parse_cli_args():
                         help="Smooth over N datapoints.")
     parser.add_argument("--task", type=int, default=0,
                         help="For gaitlab files: select the task.")
+    parser.add_argument("--sensor", type=int,
+                        help="Select a single sensor to display.")
     args = parser.parse_args()
 
     if "manual" in args.plots and args.names is None:
