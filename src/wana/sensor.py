@@ -87,7 +87,7 @@ class Sensor:
             #
             integration.estimate_velocities(self, "lab", "v{}")
             for name in ["lab_vx", "lab_vy", "lab_vz"]:
-                integration.linear_step_correction(self, name, unit="m")
+                integration.linear_step_correction(self, name, unit="m/s")
 
             integration.estimate_positions(self, "lab", "v{}_lc")
             integration.estimate_positions(self, "lab", "v{}_lc", perstep=True)
