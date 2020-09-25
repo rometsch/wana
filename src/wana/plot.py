@@ -16,7 +16,7 @@ def main():
     # sensors = t.sensors
     # name = t.name
 
-    s = Sensor(args.data_file, "physbox")
+    s = Sensor(args.data_file, "phyphox")
     if args.smooth is not None:
         s.smooth(args.smooth)
         s.postprocess()
@@ -26,7 +26,7 @@ def main():
         s.trim_time(low, up)
 
     sensors = [s]
-    name = "physbox"
+    name = "phyphox"
 
     if args.list_vars:
         print("Available sensor data:")
@@ -63,7 +63,7 @@ def parse_cli_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "data_file", help="XML (gaitlab mobile) or zip (physbox app) file.")
+        "data_file", help="XML (gaitlab mobile) or zip (phyphox app) file.")
     parser.add_argument("-p", "--plots", nargs="+", type=str, choices=available_plots,
                         default=[k for k in available_plots if k not in ["manual"]],
                         help="Plots to produce.")

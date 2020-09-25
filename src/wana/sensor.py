@@ -11,7 +11,7 @@ class Sensor:
     def __init__(self, datafile, name, sample_rate=None, cal_acc=None, cal_gyro=None, trim_low=None, trim_up=None):
         self.datafile = datafile
         self.name = name
-        self.data = load.load_rawdata_physbox(self.datafile)
+        self.data = load.load_rawdata_phyphox(self.datafile)
         self.init_accelerations()
         self.init_unit_names()
         self.cal_gyro = cal_gyro

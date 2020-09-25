@@ -39,8 +39,8 @@ def load_rawdata_mobilegaitlab(datafile):
     return data_dict
 
 
-def load_rawdata_physbox(datafile):
-    """ Load data from the raw data file provided by the physbox app.
+def load_rawdata_phyphox(datafile):
+    """ Load data from the raw data file provided by the phyphox app.
 
     The data dict contains the following values:
         counter: time variable of the sensor
