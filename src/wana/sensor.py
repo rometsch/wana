@@ -234,18 +234,25 @@ class Sensor:
         intervals = [[0, 0]] + self.data["interval_steps"] + [[-1, -1]]
         self.steps = []
         for n in range(1, len(intervals) - 1):
-            low = intervals[n-1][1]
-            up = intervals[n+1][0]
-            s = Step(self, low, up)
-            s.name = self.name + f"_step_{n}"
-            self.steps.append(s)
+            try:
+                low = intervals[n-1][1]
+                up = intervals[n+1][0]
+                s = Step(self, low, up,
+                         name=self.name + f"_step_{n}")
+                self.steps.append(s)
+            except (TypeError, IndexError):
+                print(
+                    f"Something went wrong in analysing step {n} of sensor {self.name}!")
 
 
 class Step(Sensor):
 
-    def __init__(self, other, low, up):
+    def __init__(self, other, low, up, name=None):
         self.datafile = other.datafile
-        self.name = other.name
+        if name is None:
+            self.name = other.name
+        else:
+            self.name = name
         self.cal_gyro = other.cal_gyro
         self.cal_acc = other.cal_acc
         self.units = other.units
