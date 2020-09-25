@@ -121,8 +121,26 @@ def regenerate_masks(sensor):
     sensor.data["mask_moving"] = mask_moving
 
 
-def estimate_g(sensor):
+def estimate_g(sensor, mode="average"):
     """ Estimate g vector from acceleration data in iss system.
+
+    iss = initial sensor system
+
+    Adds masked arrays containing the accelerations when the sensor is at rest: "iss_a{x,y,z}_rest".
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    mode: str
+        Select the algorithm to fit the data. Default: "average"
+    """
+    if mode == "average":
+        estimate_g_constant(sensor)
+    
+
+def estimate_g_constant(sensor):
+    """ Estimate g vector by averaging accelerations.
 
     iss = initial sensor system
 
@@ -161,6 +179,7 @@ def estimate_g(sensor):
     sensor.units["iss_gx"] = "m/s2"
     sensor.units["iss_gy"] = "m/s2"
     sensor.units["iss_gz"] = "m/s2"
+
 
 
 def remove_g(sensor):
