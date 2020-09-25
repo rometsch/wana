@@ -98,7 +98,13 @@ def calc_lab_ez(sensor):
         Object holding the sensor data.
     """
 
-    g_vec = sensor.data["iss_g"]
+    g_vec = np.array([
+        sensor.data["iss_gx"][0],
+        sensor.data["iss_gy"][0],
+        sensor.data["iss_gz"][0]
+        ])
+
+    print("g_vec", g_vec)
 
     e_z = -g_vec / np.linalg.norm(g_vec)
 
@@ -115,7 +121,12 @@ def calc_lab_ehor(sensor):
         Object holding the sensor data.
     """
     e_z = sensor.data["lab_ez"]
-    g_vec = sensor.data["iss_g"]
+    g_vec = np.array([
+        sensor.data["iss_gx"][0],
+        sensor.data["iss_gy"][0],
+        sensor.data["iss_gz"][0]
+        ])
+
     g = np.linalg.norm(g_vec)
 
     e_z = g_vec / g
