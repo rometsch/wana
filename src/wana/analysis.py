@@ -3,8 +3,10 @@
 import numpy as np
 import numpy.ma as ma
 
+import wana.event_detection as ed
 
-def estimate_g(sensor, mode="average"):
+
+def estimate_g(sensor, order=1):
     """ Estimate g vector from acceleration data in iss system.
 
     iss = initial sensor system
@@ -13,25 +15,26 @@ def estimate_g(sensor, mode="average"):
     ----------
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
-    mode: str
-        Select the algorithm to fit the data. Default: "average"
+    order: int
+        Order of the polynomial to fit.
     """
-
-    mode = "linear"
-    extract_resting_accelerations(sensor)
-    if mode == "average":
-        estimate_g_average(sensor)
-    if mode == "linear":
-        estimate_g_poly(sensor, 1)
+    mask_a_resting = sensor.data["mask_a_resting"]
+    for v in ["iss_ax", "iss_ay", "iss_az"]:
+        ed.flag_resting(sensor, v, prior_mask=mask_a_resting,
+                        N_kernel=1, delta_threshold=0.1,
+                        order=order)
+        extract_resting_values(sensor, v)
+    estimate_g_poly(sensor, order)
     set_g_units(sensor)
 
 
-def extract_resting_accelerations(sensor):
-    """ Extract accelerations for the times when sensor is at rest.
+def extract_resting_values(sensor, varname):
+    """ Extract values for the times when sensor is at rest.
 
     iss = initial sensor system
 
-    Adds masked arrays containing the accelerations when the sensor is at rest: "iss_a{x,y,z}_rest".
+    Adds masked arrays containing the accelerations when the sensor is at rest: "{varname}_resting"
+    and a time array at corresponding indices: "time_{varname}_resting".
 
 
     Parameters
@@ -39,16 +42,17 @@ def extract_resting_accelerations(sensor):
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
     """
-    mask_resting = np.logical_not(sensor.data["mask_resting"])
-    sensor.data["time_resting"] = ma.masked_array(
-        sensor.data["time"], mask=mask_resting)
-    sensor.units["time_resting"] = "s"
-    for d in ["x", "y", "z"]:
-        a_masked = ma.masked_array(sensor.data["iss_a" + d], mask=mask_resting)
+    time = sensor.data["time"]
+    mask_resting = np.logical_not(sensor.data[f"mask_{varname}_resting"])
 
-        varname = "iss_a" + d + "_rest"
-        sensor.data[varname] = a_masked
-        sensor.units[varname] = "m/s2"
+    sensor.data[f"time_{varname}_resting"] = ma.masked_array(
+        time, mask=mask_resting)
+    sensor.units[f"time_{varname}_resting"] = "s"
+
+    values_masked = ma.masked_array(sensor.data[varname], mask=mask_resting)
+
+    sensor.data[varname + "_resting"] = values_masked
+    sensor.units[varname + "_resting"] = "m/s2"
 
 
 def set_g_units(sensor):
@@ -80,9 +84,9 @@ def estimate_g_average(sensor):
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
     """
-    gx = np.average(sensor.data["iss_ax_rest"])
-    gy = np.average(sensor.data["iss_ay_rest"])
-    gz = np.average(sensor.data["iss_az_rest"])
+    gx = np.average(sensor.data["iss_ax_resting"])
+    gy = np.average(sensor.data["iss_ay_resting"])
+    gz = np.average(sensor.data["iss_az_resting"])
 
     g = np.sqrt(gx**2 + gy**2 + gz**2)
 
@@ -96,7 +100,7 @@ def estimate_g_average(sensor):
     sensor.data["iss_gz"] = np.ones(N)*gz
 
 
-def estimate_g_poly(sensor, order):
+def estimate_g_poly(sensor, order, mode="single"):
     """ Estimate g vector by fitting a polynomial to accelerations.
 
     iss = initial sensor system
@@ -111,11 +115,19 @@ def estimate_g_poly(sensor, order):
     order: int
         Order of the polynomial.
     """
-    time_resting = sensor.data["time_resting"]
     time = sensor.data["time"]
     for d in ["x", "y", "z"]:
-        acc = sensor.data[f"iss_a{d}_rest"]
-        p = np.polyfit(time_resting, acc, order)
+        varname = f"iss_a{d}"
+        if mode == "single":
+            mask = sensor.data[f"mask_{varname}_resting"]
+        elif mode == "combined":
+            mask = sensor.data[f"mask_a_resting"]
+        else:
+            raise ValueError("Mode", mode, "is not supported!")
+        time_resting = time[mask]
+        values_resting = sensor.data[varname][mask]
+
+        p = np.polyfit(time_resting, values_resting, order)
         f = np.poly1d(p)
         g = f(time)
         sensor.data[f"iss_g{d}"] = g
@@ -156,145 +168,12 @@ def zero_acceleration_resting(sensor, frame):
     frame: str
         Coordinate system.
     """
-    mask_resting = sensor.data["mask_resting"]
+    mask_resting = sensor.data["mask_a_resting"]
     for n, d in enumerate(["x", "y", "z"]):
         varname = frame + "_a" + d + "_gr"
         sensor.data[varname][mask_resting] = 0
 
     calculate_norm(sensor, frame+"_a{}_gr", unit="m")
-
-
-def estimate_velocities(sensor, frame, perstep=False):
-    """ Use accelerations with g removed to estimate velocities in the iss.
-
-    iss = initial sensor system
-    lab = laboratory frame
-    Integrate the accelerations.
-
-    Adds arrays containing the velocity: "{iss,lab}_v{x,y,z}".
-
-
-    Parameters
-    ----------
-    sensor: wana.sensor.Sensor
-        Sensor object holding the data.
-    frame: str
-        Lab or iss frame.
-    perstep: bool
-        Reset to zero before each new step.
-    """
-    dt = sensor.data["dt"]
-    for d in ["x", "y", "z"]:
-        acc_name = frame + "_a" + d + "_gr"
-        a = sensor.data[acc_name]
-
-        # second order integration
-        aux = np.zeros(len(dt))
-        aux[1:] = (a[1:] + a[:-1])/2
-        aux[0] = a[0]
-        aux *= dt
-
-        v = np.cumsum(aux)
-
-        if perstep:
-            index_step_start = sensor.data["interval_steps"][:, 0]
-            for i in index_step_start:
-                v[i:] -= v[i]
-
-        varname = frame + "_v" + d
-        if perstep:
-            varname += "_step"
-        sensor.data[varname] = v
-        sensor.units[varname] = "m/s"
-
-    varpattern = frame + "_v{}"
-    if perstep:
-        varpattern += "_step"
-    calculate_norm(sensor, varpattern, unit="m/s")
-
-
-def estimate_positions(sensor, frame, varpattern, perstep=False):
-    """ Use velocities to estimate positions in the iss.
-
-    iss = initial sensor system
-    Integrate the velocities.
-
-    Adds arrays containing the position: "{iss,lab}_{x,y,z}".
-
-
-    Parameters
-    ----------
-    sensor: wana.sensor.Sensor
-        Sensor object holding the data.
-    frame: str
-        Lab or iss frame.
-    perstep: bool
-        Reset to zero before each new step.
-    """
-    dt = sensor.data["dt"]
-    for d in ["x", "y", "z"]:
-        vel_name = frame + "_" + varpattern.format(d)
-        v = sensor.data[vel_name]
-        # x = np.cumsum(v*dt)
-
-        # second order integration
-        aux = np.zeros(len(dt))
-        aux[1:] = (v[1:] + v[:-1])/2
-        aux[0] = v[0]
-        aux *= dt
-
-        x = np.cumsum(aux)
-
-        if perstep:
-            index_step_start = sensor.data["interval_steps"][:, 0]
-            for i in index_step_start:
-                x[i:] -= x[i]
-
-        varname = frame + "_" + varpattern[1:].format(d)
-        if perstep:
-            varname += "_step"
-        sensor.data[varname] = x
-        sensor.units[varname] = "m"
-
-    varpattern = frame + "_" + varpattern[1:]
-    calculate_norm(sensor, varpattern, unit="m")
-
-
-def linear_step_correction(sensor, varname, unit=None):
-    """ Use values at beginning and end of step to correct for drift.
-
-    Use a linear interpolation to compute the correction.
-
-    Parameters
-    ----------
-    sensor: wana.sensor.Sensor
-        Sensor object holding the data.
-    varname: str
-        Variable name.
-    unit: str
-        Physical unit of the variable.
-    """
-    step_intervals = sensor.data["interval_steps"]
-
-    y = sensor.data[varname]
-
-    yc = np.zeros(len(y))
-
-    for I in step_intervals:
-        left = I[0]
-        right = I[1]
-
-        dy = y[right] - y[left]
-        dx = np.linspace(0, 1, num=right-left)
-
-        correction = - y[left] - dx*dy
-
-        yc[left:right] = y[left:right] + correction
-
-    sensor.data[varname + "_lc"] = yc
-
-    if unit is not None:
-        sensor.units[varname + "_lc"] = unit
 
 
 def calculate_norm(sensor, varpattern, unit):

@@ -1,9 +1,13 @@
+import os
+
 import numpy as np
 import wana.analysis as analysis
 import wana.transformations as trafo
 import wana.smooth as smooth
 import wana.load as load
 import wana.event_detection as ed
+import wana.integration as integration
+
 
 class Sensor:
     """ Hold data about a foot. """
@@ -31,9 +35,13 @@ class Sensor:
             self.trim_data(trim_low, trim_up)
 
         # if all([x is not None for x in [sample_rate, cal_acc, cal_gyro]]):
+        # try:
+        #     self.postprocess()
+        # except TypeError:
+        #     pass
         self.postprocess()
 
-        # self.generate_steps()
+        self.generate_steps()
 
     def postprocess(self):
         self.integrate_angles()
@@ -41,8 +49,9 @@ class Sensor:
 
         trafo.transform_to_reference_system(self)
 
-        ed.flag_resting(self)
-        analysis.estimate_g(self)
+        ed.flag_resting(self, "a", reference="g", delta_threshold=0.02)
+
+        analysis.estimate_g(self, order=1)
 
         trafo.calc_lab_ez(self)
         trafo.calc_lab_ehor(self)
@@ -54,36 +63,36 @@ class Sensor:
         analysis.remove_g(self)
         trafo.iss_to_lab(self, "a{}_gr", unit="m/s2")
 
-        analysis.estimate_velocities(self, "iss")
-        analysis.estimate_positions(self, "iss", "v{}")
+        integration.estimate_velocities(self, "iss")
+        integration.estimate_positions(self, "iss", "v{}")
 
-        analysis.estimate_velocities(self, "lab")
-        analysis.estimate_positions(self, "lab", "v{}")
+        integration.estimate_velocities(self, "lab")
+        integration.estimate_positions(self, "lab", "v{}")
         try:
             ed.find_step_intervals(self)
 
             #
             # iss frame
             #
-            analysis.estimate_velocities(self, "iss", perstep=True)
+            integration.estimate_velocities(self, "iss", perstep=True)
 
             for name in ["iss_vx", "iss_vy", "iss_vz"]:
-                analysis.linear_step_correction(self, name, unit="m/s")
+                integration.linear_step_correction(self, name, unit="m/s")
 
-            analysis.estimate_positions(self, "iss", "v{}_lc")
-            analysis.estimate_positions(self, "iss", "v{}_step")
+            integration.estimate_positions(self, "iss", "v{}_lc")
+            integration.estimate_positions(self, "iss", "v{}_step")
 
             #
             # lab frame
             #
-            analysis.estimate_velocities(self, "lab", "v{}")
+            integration.estimate_velocities(self, "lab", "v{}")
             for name in ["lab_vx", "lab_vy", "lab_vz"]:
-                analysis.linear_step_correction(self, name, unit="m")
+                integration.linear_step_correction(self, name, unit="m")
 
-            analysis.estimate_positions(self, "lab", "v{}_lc")
-            analysis.estimate_positions(self, "lab", "v{}_lc", perstep=True)
+            integration.estimate_positions(self, "lab", "v{}_lc")
+            integration.estimate_positions(self, "lab", "v{}_lc", perstep=True)
 
-            analysis.estimate_positions(self, "lab", "v{}_step")
+            integration.estimate_positions(self, "lab", "v{}_step")
             analysis.calculate_velocity_direction_angles(self, "lab_v{}_lc")
 
         except IndexError:
@@ -140,7 +149,7 @@ class Sensor:
         print("total data length", len(self.data["ax"]))
         for key in self.data:
             self.data[key] = self.data[key][low:up+1]
-            
+
     def trim_time(self, low, up):
         """ Trim the data to an interval defined by indices low and up.
 
