@@ -133,6 +133,37 @@ def append_before_extension(s, i):
     return rv
 
 
+def expand_varnames(varnames, vector_pattern="VEC"):
+    """ Expand variable names to vectors if indicated.
+
+    Vector quantities are indicated by placing the vector_pattern string
+    at the position where x,y,z would be placed.
+
+    I.e. with vector_pattern="VEC"
+    iss_aVEC_gr -> iss_ax_gr, iss_ay_gr, iss_az_gr
+
+    Parameters
+    ----------
+    varnames: list of str
+        Variable names to be expanded.
+    vector_pattern: str
+        Pattern to be replaced.
+
+    Returns
+    -------
+    list of str
+        Expanded variables names.
+    """
+    to_expand = [n for n in varnames if vector_pattern in n]
+    to_leave = [n for n in varnames if not n in to_expand]
+    expanded = []
+    for n in to_expand:
+        for d in ["x", "y", "z"]:
+            new = n.replace(vector_pattern, d)
+            expanded.append(new)
+    rv = to_leave + expanded
+    return rv
+
 def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
     """ Plot angle data.
 
@@ -151,6 +182,8 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
     plt.fig
         Pyplot figure holding the plot.
     """
+    varnames = expand_varnames(varnames)
+
     N_sensors = len(sensors)
     fig, axes = plt.subplots(1, N_sensors, sharex="all", sharey="row")
     if N_sensors == 1:
