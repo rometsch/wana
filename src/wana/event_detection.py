@@ -87,7 +87,7 @@ def find_resting_edge(sensor):
     sensor.data["mask_stop_resting"] = mask_stop_resting
 
 
-def find_step_intervals(sensor):
+def find_step_intervals(sensor, min_time=0.5):
     """ Detect the bounding interval of steps.
 
     Adds 4 arrays:
@@ -98,7 +98,10 @@ def find_step_intervals(sensor):
     ----------
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
+    min_time: float
+        Minimum time of a step.
     """
+    time = sensor.data["time"]
     steps = []
     index_stop = sensor.data["index_start_resting"]
     index_start = sensor.data["index_stop_resting"]
@@ -116,6 +119,8 @@ def find_step_intervals(sensor):
         up = index_stop[n]
         l = (up-low)
         pad = int(0.1*l)
+        if time[up] - time[low] < min_time:
+            continue
         steps.append([low-pad, up+pad])
 
     sensor.data["interval_steps"] = np.array(steps)
