@@ -175,13 +175,10 @@ class Sensor:
         """ Use calibration for gyroscope values. """
         print(
             f"calibrating gyro for sensor {self.name} ({self.datafile}) using {self.cal_gyro.file_name}")
-        offsets = self.cal_gyro.offset
-        scaling = self.cal_gyro.scaling
-        for varname, offset, scale in zip(["rx", "ry", "rz"], offsets, scaling):
-            print(varname, "data = ", np.max(
-                self.data[varname]), "offset = ", offset, "scaling = ", scale)
-            self.data[varname] -= offset
-            self.data[varname] /= scale
+        vec = np.array([self.data["rx"], self.data["ry"], self.data["rz"]])
+        cal_vec = self.cal_gyro.apply(vec)
+        for n, varname in enumerate(["rx", "ry", "rz"]):
+            self.data[varname] = cal_vec[n]
         self.units["rx"] = "deg/s"
         self.units["ry"] = "deg/s"
         self.units["rz"] = "deg/s"
@@ -193,13 +190,10 @@ class Sensor:
         """ Use calibration for acceleration values. """
         print(
             f"calibrating acceleration for sensor {self.name} ({self.datafile}) using {self.cal_acc.file_name}")
-        offsets = self.cal_acc.offset
-        scaling = self.cal_acc.scaling
-        for varname, offset, scale in zip(["ax", "ay", "az"], offsets, scaling):
-            print(varname, "data = ", np.max(
-                self.data[varname]), "offset = ", offset, "scaling = ", scale)
-            self.data[varname] -= offset
-            self.data[varname] *= 9.81/scale
+        vec = np.array([self.data["ax"], self.data["ay"], self.data["az"]])
+        cal_vec = self.cal_acc.apply(vec)
+        for n, varname in enumerate(["ax", "ay", "az"]):
+            self.data[varname] = cal_vec[n]*9.81
         self.units["ax"] = "m/s2"
         self.units["ay"] = "m/s2"
         self.units["az"] = "m/s2"
