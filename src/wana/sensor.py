@@ -243,18 +243,21 @@ class Sensor:
 
     def generate_steps(self):
         """ Construct an array with sensor objects for each step. """
+        for n in range(1, len(self.data["interval_steps"]) + 1):
+            self.generate_step(n)
+
+    def generate_step(self, n):
+        """ Construct a single step. """
         intervals = [[0, 0]] + self.data["interval_steps"] + [[-1, -1]]
-        self.steps = []
-        for n in range(1, len(intervals) - 1):
-            try:
-                low = intervals[n-1][1]
-                up = intervals[n+1][0]
-                s = Step(self, low, up,
-                         name=self.name + f"_step_{n}")
-                self.steps.append(s)
-            except (TypeError, IndexError):
-                print(
-                    f"Something went wrong in analysing step {n} of sensor {self.name}!")
+        try:
+            low = intervals[n-1][1]
+            up = intervals[n+1][0]
+            s = Step(self, low, up,
+                     name=self.name + f"_step_{n}")
+            self.steps.append(s)
+        except (TypeError, IndexError):
+            print(
+                f"Something went wrong in analysing step {n} of sensor {self.name}!")
 
 
 class Step(Sensor):
