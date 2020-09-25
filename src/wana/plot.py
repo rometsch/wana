@@ -1,11 +1,13 @@
 import argparse
+import sys
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+from wana.sensor import Sensor
 from wana.session import Session
 from wana.task import Task
-from wana.sensor import Sensor
 
 
 def main():
@@ -46,10 +48,16 @@ def main():
         if key == "manual":
             fig = plot_functions[key](
                 sensors, args.names, show_steps=args.show_steps, stepwise=args.stepwise)
-        else:
+        elif key in available_plots:
             fig = plot_functions[key](
                 sensors, show_steps=args.show_steps, stepwise=args.stepwise)
+        else:
+            fig = plot_vars(
+                sensors, [key], show_steps=args.show_steps, stepwise=args.stepwise)
+
         fig.suptitle(name)
+
+        add_footnote(fig, "wana plot " + " ".join(sys.argv[1:]))
         if args.outfile:
             append_name = len(args.plots) > 1
             save_plot(fig, key, args.outfile, append_name=append_name)
@@ -69,8 +77,9 @@ def parse_cli_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "data_file", help="XML (gaitlab mobile) or zip (phyphox app) file.")
-    parser.add_argument("-p", "--plots", nargs="+", type=str, choices=available_plots,
-                        default=[k for k in available_plots if k not in ["manual", "trajectory"]],
+    parser.add_argument("-p", "--plots", nargs="+", type=str,
+                        default=[k for k in available_plots if k not in [
+                            "manual", "trajectory"]],
                         help="Plots to produce.")
     parser.add_argument("-o", "--outfile", help="File to output data to.")
     parser.add_argument("-n", "--names", nargs="+",
@@ -97,6 +106,19 @@ def parse_cli_args():
         exit(1)
 
     return args
+
+
+def add_footnote(fig, text):
+    """ Add a footnote to a plot.
+
+    Parameters
+    ----------
+    fig: pyplot.figure
+        Figure to put the footnote to.
+    text: str
+        String to put into the footnote.
+    """
+    fig.text(0.02, 0.02, text, fontdict={"fontsize": 4})
 
 
 def save_plot(fig, name, filename, append_name=False):
@@ -171,6 +193,7 @@ def expand_varnames(varnames, vector_pattern="VEC"):
     rv = to_leave + expanded
     return rv
 
+
 def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
     """ Plot angle data.
 
@@ -217,7 +240,7 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
         for varname, color in zip(varnames, colors):
             x = sensor.data["time"]
             y = sensor.data[varname]
-            ax.plot(x, y, color=color, alpha=0.6)
+            ax.plot(x, y, color=color, alpha=1)
             try:
                 units.append(sensor.units[varname])
             except KeyError:
