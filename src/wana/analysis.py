@@ -126,8 +126,6 @@ def estimate_g(sensor, mode="average"):
 
     iss = initial sensor system
 
-    Adds masked arrays containing the accelerations when the sensor is at rest: "iss_a{x,y,z}_rest".
-
     Parameters
     ----------
     sensor: wana.sensor.Sensor
@@ -135,30 +133,67 @@ def estimate_g(sensor, mode="average"):
     mode: str
         Select the algorithm to fit the data. Default: "average"
     """
-    if mode == "average":
-        estimate_g_constant(sensor)
-    
 
-def estimate_g_constant(sensor):
-    """ Estimate g vector by averaging accelerations.
+    mode = "linear"
+    extract_resting_accelerations(sensor)
+    if mode == "average":
+        estimate_g_average(sensor)
+    if mode == "linear":
+        estimate_g_poly(sensor, 1)
+    set_g_units(sensor)
+
+def extract_resting_accelerations(sensor):
+    """ Extract accelerations for the times when sensor is at rest.
 
     iss = initial sensor system
 
     Adds masked arrays containing the accelerations when the sensor is at rest: "iss_a{x,y,z}_rest".
+
 
     Parameters
     ----------
     sensor: wana.sensor.Sensor
         Sensor object holding the data.
     """
-    mask_moving = np.logical_not(sensor.data["mask_resting"])
+    mask_resting = np.logical_not(sensor.data["mask_resting"])
+    sensor.data["time_resting"] = ma.masked_array(sensor.data["time"], mask=mask_resting)
+    sensor.units["time_resting"] = "s"
     for d in ["x", "y", "z"]:
-        a_masked = ma.masked_array(sensor.data["iss_a" + d], mask=mask_moving)
+        a_masked = ma.masked_array(sensor.data["iss_a" + d], mask=mask_resting)
 
         varname = "iss_a" + d + "_rest"
         sensor.data[varname] = a_masked
         sensor.units[varname] = "m/s2"
 
+def set_g_units(sensor):
+    """ Set units for the g vector data.
+
+    iss = initial sensor system
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    """
+    sensor.units["iss_g"] = "m/s2"
+    sensor.units["iss_gx"] = "m/s2"
+    sensor.units["iss_gy"] = "m/s2"
+    sensor.units["iss_gz"] = "m/s2"
+
+
+def estimate_g_average(sensor):
+    """ Estimate g vector by averaging accelerations.
+
+    iss = initial sensor system
+
+    Adds a len 3 array for the vector of g (iss_g) and array for the
+    components of g at every point in time (iss_g{x,y,z}).
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    """
     gx = np.average(sensor.data["iss_ax_rest"])
     gy = np.average(sensor.data["iss_ay_rest"])
     gz = np.average(sensor.data["iss_az_rest"])
@@ -170,17 +205,37 @@ def estimate_g_constant(sensor):
 
     print(f"g = ({gx}, {gy}, {gz}), |g| = {g}")
 
-    # add components for visualization
+    # add components
     N = len(sensor.data["counter"])
     sensor.data["iss_gx"] = np.ones(N)*gx
     sensor.data["iss_gy"] = np.ones(N)*gy
     sensor.data["iss_gz"] = np.ones(N)*gz
 
-    sensor.units["iss_gx"] = "m/s2"
-    sensor.units["iss_gy"] = "m/s2"
-    sensor.units["iss_gz"] = "m/s2"
+
+def estimate_g_poly(sensor, order):
+    """ Estimate g vector by fitting a polynomial to accelerations.
+
+    iss = initial sensor system
 
 
+    Adds arrays for the components of g at every point in time (iss_g{x,y,z}).
+
+    Parameters
+    ----------
+    sensor: wana.sensor.Sensor
+        Sensor object holding the data.
+    order: int
+        Order of the polynomial.
+    """
+    time_resting = sensor.data["time_resting"]
+    time = sensor.data["time"]
+    for d in ["x", "y", "z"]:
+        acc = sensor.data[f"iss_a{d}_rest"]
+        p = np.polyfit(time_resting, acc, order)
+        f = np.poly1d(p)
+        g = f(time)
+        sensor.data[f"iss_g{d}"] = g
+        print(f"g{d}",g)
 
 def remove_g(sensor):
     """ Remove g vector from acceleration data in iss system.
