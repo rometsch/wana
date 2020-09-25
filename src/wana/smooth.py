@@ -20,7 +20,13 @@ def smooth_window(sensor, varname, N=10):
     N = int(N)
     kernel = np.ones(N)/N
 
-    sensor.data[varname] = np.convolve(v, kernel, mode="same")
+    middle = int(np.ceil(N/2))
+
+    smoothed = np.convolve(v, kernel, mode="same")
+    smoothed[:middle] = smoothed[middle]
+    smoothed[-middle-1:] = smoothed[-middle-1]
+
+    sensor.data[varname] = smoothed
 
 
 def smooth_lowpass(sensor, varname, fcrit=10):
