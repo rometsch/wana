@@ -65,7 +65,7 @@ def parse_cli_args():
     parser.add_argument(
         "data_file", help="XML (gaitlab mobile) or zip (phyphox app) file.")
     parser.add_argument("-p", "--plots", nargs="+", type=str, choices=available_plots,
-                        default=[k for k in available_plots if k not in ["manual"]],
+                        default=[k for k in available_plots if k not in ["manual", "trajectory"]],
                         help="Plots to produce.")
     parser.add_argument("-o", "--outfile", help="File to output data to.")
     parser.add_argument("-n", "--names", nargs="+",
@@ -177,7 +177,7 @@ def plot_vars(sensors, varnames, y_name="", show_steps=False, stepwise=False):
         for varname, color in zip(varnames, colors):
             x = sensor.data["time"]
             y = sensor.data[varname]
-            ax.plot(x, y, color=color)
+            ax.plot(x, y, color=color, alpha=0.6)
             try:
                 units.append(sensor.units[varname])
             except KeyError:
