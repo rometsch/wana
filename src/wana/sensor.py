@@ -3,7 +3,7 @@ import wana.analysis as analysis
 import wana.transformations as trafo
 import wana.smooth as smooth
 import wana.load as load
-
+import wana.event_detection as ed
 
 class Sensor:
     """ Hold data about a foot. """
@@ -38,7 +38,7 @@ class Sensor:
 
         trafo.transform_to_reference_system(self)
 
-        analysis.flag_resting(self)
+        ed.flag_resting(self)
         analysis.estimate_g(self)
 
         trafo.calc_lab_ez(self)
@@ -57,7 +57,7 @@ class Sensor:
         analysis.estimate_velocities(self, "lab")
         analysis.estimate_positions(self, "lab", "v{}")
         try:
-            analysis.find_step_intervals(self)
+            ed.find_step_intervals(self)
 
             #
             # iss frame
