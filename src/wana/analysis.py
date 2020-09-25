@@ -195,7 +195,7 @@ def remove_g(sensor):
         Sensor object holding the data.
     """
     for n, d in enumerate(["x", "y", "z"]):
-        g_n = sensor.data["iss_g"][n]
+        g_n = sensor.data["iss_g"+d]
         a = sensor.data["iss_a"+d]
 
         varname = "iss_a" + d + "_gr"
