@@ -52,7 +52,7 @@ def write_data(sen, name, outdir):
     rz = sen.data["rz"]/180*np.pi
 
     header = "# Accelerometer and gyroscope data converted using wana."
-    header += "\n# t = time"
+    header += "\n# t = time in s"
     header += "\n# a{x,y,z} = acceleration in sensors coordinate system in m/s"
     header += "\n# r{x,y,z} = angular velocity in sensors coordinate system in rad/s"
     header += "\n# t\tax\tay\taz\trx\try\trz"
