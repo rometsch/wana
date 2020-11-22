@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from pprint import pprint
 
-from wana.xmldict import XmlDictConfig
+from wana.xmldict import XmlDictConfig, XmlListConfig
 
 
 class Session:
@@ -22,7 +22,10 @@ class Session:
         self.duration = self.stop - self.start
 
     def parse_tests(self):
-        self.tests = [x for x in self.data["TestList"]["Test"]]
+        if isinstance(self.data["TestList"]["Test"], XmlListConfig):
+            self.tests = [x for x in self.data["TestList"]["Test"]]
+        else:
+            self.tests = [self.data["TestList"]["Test"]]
         self.tests.sort(key=lambda x: int(
             x["MoteList"]["Mote"][0]["Tag"]["Start"]))
 
