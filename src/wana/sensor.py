@@ -35,11 +35,10 @@ class Sensor:
             self.trim_data(trim_low, trim_up)
 
         # if all([x is not None for x in [sample_rate, cal_acc, cal_gyro]]):
-        # try:
-        #     self.postprocess()
-        # except TypeError:
-        #     pass
-        self.postprocess()
+        try:
+            self.postprocess()
+        except TypeError:
+            pass
 
         self.steps = []
 
